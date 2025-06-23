@@ -12,7 +12,6 @@ export default function CurateKnowledgePage() {
   const [similarMainCategory, setSimilarMainCategory] = useState(null);
   const [similarSubCategory, setSimilarSubCategory] = useState(null);
   const [similarityScore, setSimilarityScore] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
@@ -35,7 +34,7 @@ export default function CurateKnowledgePage() {
       
       data.forEach(item => {
         const mainCat = item.main_category || 'General Studies';
-        const subCat = item.sub_category || item.category || 'unknown'; // Fallback for old schema
+        const subCat = item.sub_category || 'unknown';
         
         if (!categoryMap.has(mainCat)) {
           categoryMap.set(mainCat, new Set());
@@ -73,7 +72,7 @@ export default function CurateKnowledgePage() {
         
         // Handle categories with new schema
         const mainCat = item.main_category || 'General Studies';
-        const subCat = item.sub_category || item.category || 'unknown';
+        const subCat = item.sub_category || 'unknown';
         
         uniqueMainCategories.add(mainCat);
         uniqueSubCategories.add(subCat);
@@ -116,7 +115,7 @@ export default function CurateKnowledgePage() {
         
         console.log(`📊 Found ${result.recommendations.length} recommendations`);
         if (result.similar_main_category) {
-          console.log(`🔍 Similar content found: ${result.similar_main_category} → ${result.similar_sub_category}`);
+          console.log(`🔍 Similar content found: ${result.similar_main_category} → ${result.similar_sub_category} (${(result.similarity_score * 100).toFixed(1)}% similarity)`);
         }
       } else {
         throw new Error('Invalid response format from backend');
@@ -153,9 +152,9 @@ export default function CurateKnowledgePage() {
       if (recommendation.tags && Array.isArray(recommendation.tags)) {
         tags = recommendation.tags;
       } else if (recommendation.tags) {
-        tags = [recommendation.tags]; // Convert single tag to array
+        tags = [recommendation.tags];
       } else {
-        tags = ['knowledge']; // Default fallback
+        tags = ['knowledge'];
       }
 
       // Create knowledge item using new schema
@@ -164,19 +163,43 @@ export default function CurateKnowledgePage() {
         sub_category: recommendation.sub_category,
         content: recommendation.updated_text,
         tags: tags,
-        source: 'text', // Default source
+        source: 'text',
       };
 
-      console.log('⚡ Creating knowledge item with new schema...');
+      console.log('⚡ Processing knowledge item (create or update)...');
       console.log('📋 Knowledge item:', knowledgeItem);
 
+      // Call the enhanced create method (handles both create and update)
       const result = await knowledgeAPI.create(knowledgeItem);
 
-      console.log('✅ Knowledge item created successfully:', result);
+      console.log('✅ Knowledge item processed successfully:', result);
 
-      setSuccessMessage(
-        `✅ Successfully created: ${recommendation.main_category} → ${recommendation.sub_category}`
-      );
+      // Show appropriate success message based on operation
+      const operation = result.operation || 'processed';
+      let successMessage;
+      
+      switch (operation) {
+        case 'created':
+          successMessage = `✨ Successfully created: ${recommendation.main_category} → ${recommendation.sub_category}`;
+          break;
+        case 'updated':
+          successMessage = `🔄 Successfully updated: ${recommendation.main_category} → ${recommendation.sub_category}`;
+          break;
+        default:
+          successMessage = `✅ Successfully processed: ${recommendation.main_category} → ${recommendation.sub_category}`;
+      }
+      
+      setSuccessMessage(successMessage);
+
+      // Show additional info if there was similar content
+      if (similarMainCategory && similarityScore >= similarityThreshold) {
+        const similarityPercent = (similarityScore * 100).toFixed(1);
+        setTimeout(() => {
+          setSuccessMessage(prev => 
+            prev + ` (${similarityPercent}% similarity detected - content was merged/updated)`
+          );
+        }, 1000);
+      }
 
       // Refresh categories and stats
       await loadCategories();
@@ -189,19 +212,27 @@ export default function CurateKnowledgePage() {
       setSimilarityScore(null);
       setInputText('');
 
-      // Auto-clear success message after 5 seconds
+      // Auto-clear success message after 7 seconds (longer to read the detailed message)
       setTimeout(() => {
         setSuccessMessage('');
-      }, 5000);
+      }, 7000);
 
     } catch (error) {
       console.error('❌ Application failed:', error);
-      setError(`Failed to apply recommendation: ${error.message}`);
+      
+      // Enhanced error handling
+      if (error.message.includes('duplicate key')) {
+        setError('This category already exists. Please try a different sub-category name.');
+      } else if (error.message.includes('unique constraint')) {
+        setError('A knowledge item with this category already exists. The system should have updated it - please try again.');
+      } else {
+        setError(`Failed to apply recommendation: ${error.message}`);
+      }
     } finally {
       setIsApplying(false);
     }
   };
-
+  
   const handleDoNothing = () => {
     // Clear everything and return to input state
     setRecommendations(null);
@@ -223,6 +254,15 @@ export default function CurateKnowledgePage() {
       e.preventDefault();
       handleProcessText();
     }
+  };
+
+  // Helper function to get similarity level description
+  const getSimilarityLevel = (score) => {
+    if (score >= 0.9) return { label: 'Very High', color: 'text-red-600 bg-red-100' };
+    if (score >= 0.8) return { label: 'High', color: 'text-orange-600 bg-orange-100' };
+    if (score >= 0.7) return { label: 'Medium', color: 'text-yellow-600 bg-yellow-100' };
+    if (score >= 0.6) return { label: 'Low', color: 'text-blue-600 bg-blue-100' };
+    return { label: 'Very Low', color: 'text-gray-600 bg-gray-100' };
   };
 
   return (
@@ -365,20 +405,62 @@ export default function CurateKnowledgePage() {
                 </div>
               </div>
 
-              {/* Similar Category Info */}
+              {/* Enhanced Similar Category Info */}
+              {/* Debug Information - Remove after fixing */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
+                  <h4 className="text-yellow-200 font-semibold mb-2">🐛 DEBUG INFO:</h4>
+                  <div className="text-xs text-yellow-100 space-y-1">
+                    <div>similarMainCategory: {JSON.stringify(similarMainCategory)}</div>
+                    <div>similarSubCategory: {JSON.stringify(similarSubCategory)}</div>
+                    <div>similarityScore: {JSON.stringify(similarityScore)}</div>
+                    <div>similarityThreshold: {JSON.stringify(similarityThreshold)}</div>
+                    <div>Should show notification: {JSON.stringify(!!similarMainCategory && similarityScore >= similarityThreshold)}</div>
+                  </div>
+                </div>
+              )}
               {similarMainCategory && (
-                <div className="mb-6 p-4 bg-blue-500/20 rounded-lg border border-blue-400/30">
-                  <h3 className="text-sm font-semibold text-blue-200 mb-2">
-                    🔍 Similar Content Detected:
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
+                  <h3 className="text-sm font-semibold text-blue-200 mb-3 flex items-center gap-2">
+                    🔍 SIMILAR CONTENT DETECTED:
                   </h3>
-                  <div className="text-blue-100 text-sm">
-                    <div className="mb-1">
-                      <span className="font-medium">Category:</span> {similarMainCategory}
-                      {similarSubCategory && <> → {similarSubCategory}</>}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-blue-100 text-sm">
+                        <div className="mb-1">
+                          <span className="font-medium">Category:</span> 
+                          <span className="ml-2 bg-blue-500/30 px-2 py-1 rounded text-xs">
+                            {similarMainCategory}
+                          </span>
+                          {similarSubCategory && (
+                            <>
+                              <span className="mx-2">→</span>
+                              <span className="bg-purple-500/30 px-2 py-1 rounded text-xs">
+                                {similarSubCategory}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {similarityScore !== null && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Similarity:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getSimilarityLevel(similarityScore).color}`}>
+                              {(similarityScore * 100).toFixed(1)}% - {getSimilarityLevel(similarityScore).label}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {similarityScore !== null && (
-                      <div>
-                        <span className="font-medium">Similarity:</span> {(similarityScore * 100).toFixed(1)}%
+                    
+                    {/* Similarity Warning */}
+                    {similarityScore >= 0.8 && (
+                      <div className="mt-3 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
+                        <div className="flex items-center gap-2 text-yellow-200">
+                          <span>⚠️</span>
+                          <span className="text-sm font-medium">
+                            High similarity detected! Consider if this is truly new knowledge or if you should update existing content.
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -404,7 +486,7 @@ export default function CurateKnowledgePage() {
                               <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">
                                 Option {rec.option_number}
                               </span>
-                              <span className="text-white/70 text-xs">
+                              <span className="text-white/70 text-xs bg-white/10 px-2 py-1 rounded">
                                 {rec.change}
                               </span>
                             </div>

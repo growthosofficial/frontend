@@ -11,7 +11,8 @@ import {
   FolderPlus,
   Folder,
   User2,
-  BookOpen
+  BookOpen,
+  Grid3X3
 } from "lucide-react"
 
 export default function SidebarNavigation({ currentPage = "knowledge" }) {
@@ -26,9 +27,9 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
         {
           href: "/knowledge",
           icon: <BookOpen size={16} />,
-          label: "Knowledge",
+          label: "Knowledge List",
           active: currentPage === "knowledge"
-        }
+        },
       ]
     },
     {
@@ -73,7 +74,6 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
   ]
 
   return (
-    //can fix later on about scrollbar when zooming in
     <aside
       className={`
         relative flex flex-col transition-all duration-300
@@ -90,13 +90,15 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
         {/* Left: title & action icons only when expanded */}
         {isExpanded && (
           <>
-            <h1 className="text-lg font-bold text-lime-300">logo</h1>
-            <button className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition">
-              <Settings size={16} />
-            </button>
-            <button className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition">
-              <HelpCircle size={16} />
-            </button>
+            <h1 className="text-lg font-bold text-lime-300">GrowthOS</h1>
+            <div className="flex gap-1">
+              <button className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition">
+                <Settings size={16} className="text-white" />
+              </button>
+              <button className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition">
+                <HelpCircle size={16} className="text-white" />
+              </button>
+            </div>
           </>
         )}
 
@@ -106,7 +108,7 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
           className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition"
           title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
         >
-          {isExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          {isExpanded ? <ChevronLeft size={16} className="text-white" /> : <ChevronRight size={16} className="text-white" />}
         </button>
       </div>
 
@@ -129,9 +131,11 @@ function NavSection({ title, items, isExpanded }) {
   return (
     <section className="mb-4">
       <div className="border-b border-white pt-0 pb-4">
-        <div className="pb-2">
-          <h3> {title}</h3>
-        </div>
+        {isExpanded && (
+          <div className="pb-2">
+            <h3 className="text-white/80 text-sm font-medium">{title}</h3>
+          </div>
+        )}
         <div className="flex flex-col space-y-3">
           {items.map(item => (
             <NavItem key={item.label} {...item} isExpanded={isExpanded} />
@@ -150,30 +154,30 @@ function NavItem({
   active = false,
   dark = false
 }) {
-  // flex items-center justify-between px-3 py-2 rounded-xl transition h-full max-h-10
-  // ${isExpanded ? 'flex items-center justify-between px-3 py-2 rounded-xl h-full max-h-10' :
-  //   'flex items-center justify-between px-3 py-2 rounded-xl h-full max-h-10'}
   return (
     <Link
       href={href}
       className={`
-        flex items-center justify-between px-3 py-2 rounded-xl h-10
+        flex items-center justify-between px-3 py-2 rounded-xl h-10 transition-all
         ${
           dark
             ? "bg-gray-800 text-white hover:bg-gray-700"
             : "bg-white text-gray-800 hover:bg-gray-100"
         }
         ${active && !dark ? "ring-2 ring-blue-500" : ""}
+        ${active && dark ? "ring-2 ring-white" : ""}
       `}
       aria-current={active ? "page" : undefined}
       title={!isExpanded ? label : undefined}
     >
       <div className="flex items-center gap-2">
-        {icon}
+        <div className={dark ? "text-white" : "text-gray-600"}>
+          {icon}
+        </div>
         {isExpanded && <span className="truncate w-full">{label}</span>}
       </div>
       {isExpanded && (
-        <ChevronRight size={16} className="text-gray-400 transform rotate-90" />
+        <ChevronRight size={16} className={`${dark ? "text-gray-400" : "text-gray-400"} transform rotate-90`} />
       )}
     </Link>
   )

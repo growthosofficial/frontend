@@ -3,101 +3,42 @@
 import React, { useState, useEffect } from 'react';
 import { knowledgeAPI } from '../../lib/supabase';
 import SidebarNavigation from '../../components/SidebarNavigation';
-import Link from 'next/link';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
-// Knowledge Item Card Component with new schema support
-const KnowledgeCard = ({ 
-  id,
-  main_category, 
-  sub_category, 
-  content, 
-  tags, 
-  source,
-  strength_score,
-  created_at, 
-  last_updated 
-}) => {
+// Individual knowledge item card within a subcategory
+const KnowledgeItemCard = ({ item }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const truncateLength = 200;
-  const shouldTruncate = content.length > truncateLength;
-
-  // Handle strength score display
-  const getStrengthColor = (score) => {
-    if (!score) return 'bg-gray-200';
-    if (score >= 0.8) return 'bg-green-500';
-    if (score >= 0.6) return 'bg-yellow-500';
-    if (score >= 0.4) return 'bg-orange-500';
-    return 'bg-red-500';
-  };
-
-  const getStrengthLabel = (score) => {
-    if (!score) return 'Not Scored';
-    if (score >= 0.8) return 'Strong';
-    if (score >= 0.6) return 'Good';
-    if (score >= 0.4) return 'Weak';
-    return 'Very Weak';
-  };
+  const truncateLength = 150;
+  const shouldTruncate = item.content.length > truncateLength;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-      {/* Category Header with new schema */}
-      <div className="border-b border-gray-200 pb-3 mb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="text-sm text-blue-600 font-medium mb-1">
-              {main_category}
-            </div>
-            <h3 className="font-semibold text-gray-800 text-lg">
-              {sub_category}
-            </h3>
-          </div>
-          {/* Strength Score Indicator */}
-          {strength_score !== null && strength_score !== undefined && (
-            <div className="flex items-center gap-2 ml-4">
-              <div 
-                className={`w-3 h-3 rounded-full ${getStrengthColor(strength_score)}`}
-                title={`Strength: ${(strength_score * 100).toFixed(0)}% - ${getStrengthLabel(strength_score)}`}
-              ></div>
-              <span className="text-xs text-gray-500">
-                {(strength_score * 100).toFixed(0)}%
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {/* Source indicator */}
-        {source && source !== 'text' && (
-          <div className="mt-2">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              📄 {source}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Content Section */}
-      <div className="mb-4">
-        <div className="text-gray-600 text-sm leading-relaxed">
-          {shouldTruncate && !isExpanded ? `${content.substring(0, truncateLength)}...` : content}
+    <div className="bg-white/80 backdrop-blur-sm rounded-lg border border-white/30 p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-white/90">
+      {/* Content */}
+      <div className="mb-3">
+        <div className="text-gray-700 text-sm leading-relaxed">
+          {shouldTruncate && !isExpanded 
+            ? `${item.content.substring(0, truncateLength)}...` 
+            : item.content
+          }
         </div>
         {shouldTruncate && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+            className="mt-2 text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors"
           >
-            {isExpanded ? 'Read Less' : 'Read More'}
+            {isExpanded ? 'Show Less' : 'Show More'}
           </button>
         )}
       </div>
 
-      {/* Tags Section */}
-      {tags && tags.length > 0 && (
+      {/* Tags */}
+      {item.tags && item.tags.length > 0 && (
         <div className="mb-3">
           <div className="flex flex-wrap gap-1">
-            {tags.map((tag, index) => (
+            {item.tags.map((tag, index) => (
               <span
                 key={index}
-                className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium"
+                className="bg-blue-100/70 text-blue-800 px-2 py-1 rounded-full text-xs font-medium"
               >
                 {tag}
               </span>
@@ -106,115 +47,176 @@ const KnowledgeCard = ({
         </div>
       )}
 
-      {/* Timestamp Footer */}
-      <div className="text-xs text-gray-400 border-t border-gray-100 pt-2">
-        <div className="flex justify-between items-center">
-          <div>
-            Created: {new Date(created_at).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </div>
-          <div className="text-xs text-gray-500">
-            ID: {id}
-          </div>
-        </div>
-        {last_updated !== created_at && (
-          <div className="mt-1">
-            Updated: {new Date(last_updated).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </div>
-        )}
+      {/* Footer */}
+      <div className="text-xs text-gray-500 border-t border-gray-200/50 pt-2">
+        Last updated: {new Date(item.last_updated).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })}
       </div>
     </div>
   );
 };
 
-// Category Filter Component
-const CategoryFilter = ({ categories, selectedMainCategory, selectedSubCategory, onFilterChange }) => {
+// Subcategory section within a main category
+const SubCategorySection = ({ subCategory, items }) => {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-      <h3 className="font-semibold text-gray-800 mb-3">Filter by Category</h3>
-      
-      {/* Main Category Filter */}
-      <div className="mb-3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Main Category</label>
-        <select
-          value={selectedMainCategory}
-          onChange={(e) => onFilterChange(e.target.value, '')}
-          className="w-full p-2 border border-gray-300 rounded text-sm"
-        >
-          <option value="">All Main Categories</option>
-          {Object.keys(categories).sort().map(mainCat => (
-            <option key={mainCat} value={mainCat}>
-              {mainCat} ({categories[mainCat].total_items})
-            </option>
-          ))}
-        </select>
+    <div className="mb-6">
+      {/* Subcategory Header */}
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-white/90 flex items-center gap-2">
+          {subCategory}
+          <span className="bg-white/20 text-white/80 px-2 py-1 rounded-full text-xs font-medium">
+            {items.length}
+          </span>
+        </h3>
       </div>
 
-      {/* Sub Category Filter */}
-      {selectedMainCategory && categories[selectedMainCategory] && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category</label>
-          <select
-            value={selectedSubCategory}
-            onChange={(e) => onFilterChange(selectedMainCategory, e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded text-sm"
-          >
-            <option value="">All Sub Categories</option>
-            {categories[selectedMainCategory].sub_categories.sort().map(subCat => (
-              <option key={subCat} value={subCat}>
-                {subCat}
-              </option>
-            ))}
-          </select>
+      {/* Knowledge Items Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {items.map(item => (
+          <KnowledgeItemCard key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Main category card component
+const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
+  // Group items by subcategory
+  const groupedBySubCategory = data.reduce((acc, item) => {
+    const subCat = item.sub_category;
+    if (!acc[subCat]) {
+      acc[subCat] = [];
+    }
+    acc[subCat].push(item);
+    return acc;
+  }, {});
+
+  // Get gradient colors based on category name
+  const getGradientClass = (category) => {
+    const gradients = {
+      'Business & Economics': 'from-blue-500 to-blue-700',
+      'Technology & Engineering': 'from-purple-500 to-purple-700',
+      'Science & Nature': 'from-green-500 to-green-700',
+      'Society & Culture': 'from-pink-500 to-pink-700',
+      'Arts & Entertainment': 'from-orange-500 to-orange-700',
+      'Health & Medicine': 'from-red-500 to-red-700',
+      'Education & Learning': 'from-indigo-500 to-indigo-700',
+      'Politics & Government': 'from-gray-500 to-gray-700',
+    };
+    
+    return gradients[category] || 'from-slate-500 to-slate-700';
+  };
+
+  const totalItems = data.length;
+  const subCategoryCount = Object.keys(groupedBySubCategory).length;
+
+  return (
+    <div className={`rounded-xl shadow-lg overflow-hidden bg-gradient-to-br ${getGradientClass(mainCategory)} transition-all duration-300 ${isExpanded ? 'col-span-full' : ''}`}>
+      {/* Card Header - Always Visible */}
+      <div 
+        className="p-6 cursor-pointer hover:bg-black/10 transition-colors"
+        onClick={onToggle}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-white mb-2">
+              {mainCategory}
+            </h2>
+            <div className="flex items-center gap-4 text-white/80 text-sm">
+              <span>{totalItems} items</span>
+              <span>•</span>
+              <span>{subCategoryCount} categories</span>
+            </div>
+            
+            {/* Sample subcategories when collapsed */}
+            {!isExpanded && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {Object.keys(groupedBySubCategory).slice(0, 3).map(subCat => (
+                  <span
+                    key={subCat}
+                    className="bg-white/20 text-white/90 px-3 py-1 rounded-full text-xs font-medium"
+                  >
+                    {subCat}
+                  </span>
+                ))}
+                {subCategoryCount > 3 && (
+                  <span className="bg-white/20 text-white/90 px-3 py-1 rounded-full text-xs font-medium">
+                    +{subCategoryCount - 3} more
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="ml-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/20 text-white">
+              {isExpanded ? (
+                <ChevronDown size={20} />
+              ) : (
+                <ChevronRight size={20} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded count badge */}
+        <div className="absolute top-4 right-16">
+          <div className="bg-white/90 text-gray-800 px-3 py-1 rounded-full text-lg font-bold min-w-[3rem] text-center">
+            {totalItems}
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="px-6 pb-6">
+          <div className="bg-black/10 rounded-lg p-6">
+            {Object.entries(groupedBySubCategory)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([subCategory, items]) => (
+                <SubCategorySection
+                  key={subCategory}
+                  subCategory={subCategory}
+                  items={items}
+                />
+              ))}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default function KnowledgeViewPage() {
+export default function OrganizedKnowledgeView() {
   const [knowledgeItems, setKnowledgeItems] = useState([]);
-  const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
-  const [categories, setCategories] = useState({});
-  const [selectedMainCategory, setSelectedMainCategory] = useState('');
-  const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch knowledge items and organize by categories
+  // Fetch knowledge items
   useEffect(() => {
     async function fetchKnowledgeItems() {
       try {
         setLoading(true);
         setError(null);
 
-        const [data, statsData, groupedCategories] = await Promise.all([
+        const [data, statsData] = await Promise.all([
           knowledgeAPI.getAll(),
-          knowledgeAPI.getStats(),
-          knowledgeAPI.getCategoriesGrouped()
+          knowledgeAPI.getStats()
         ]);
 
         setKnowledgeItems(data || []);
-        setFilteredItems(data || []);
         setStats(statsData);
-        setCategories(groupedCategories);
 
       } catch (err) {
-        console.error('Error fetching knowledge items:', err);
-        setError('Failed to load knowledge items. Please try again.');
+        console.error('❌ Error fetching knowledge items:', err);
+        setError(`Failed to load knowledge items: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -223,198 +225,169 @@ export default function KnowledgeViewPage() {
     fetchKnowledgeItems();
   }, []);
 
-  // Filter items based on selected categories and search term
-  useEffect(() => {
-    let filtered = knowledgeItems;
-
-    // Filter by main category
-    if (selectedMainCategory) {
-      filtered = filtered.filter(item => item.main_category === selectedMainCategory);
+  // Group items by main category
+  const groupedByMainCategory = knowledgeItems.reduce((acc, item) => {
+    const mainCat = item.main_category;
+    if (!acc[mainCat]) {
+      acc[mainCat] = [];
     }
+    acc[mainCat].push(item);
+    return acc;
+  }, {});
 
-    // Filter by sub category
-    if (selectedSubCategory) {
-      filtered = filtered.filter(item => item.sub_category === selectedSubCategory);
-    }
-
-    // Filter by search term
+  // Filter items based on search
+  const filteredGroupedData = Object.entries(groupedByMainCategory).reduce((acc, [mainCat, items]) => {
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(item =>
+      const filteredItems = items.filter(item =>
         item.content.toLowerCase().includes(search) ||
-        item.main_category.toLowerCase().includes(search) ||
         item.sub_category.toLowerCase().includes(search) ||
+        mainCat.toLowerCase().includes(search) ||
         (item.tags && item.tags.some(tag => tag.toLowerCase().includes(search)))
       );
+      if (filteredItems.length > 0) {
+        acc[mainCat] = filteredItems;
+      }
+    } else {
+      acc[mainCat] = items;
     }
+    return acc;
+  }, {});
 
-    setFilteredItems(filtered);
-  }, [knowledgeItems, selectedMainCategory, selectedSubCategory, searchTerm]);
-
-  const handleFilterChange = (mainCategory, subCategory) => {
-    setSelectedMainCategory(mainCategory);
-    setSelectedSubCategory(subCategory);
+  const toggleCategory = (category) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedCategories(newExpanded);
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
+  const expandAll = () => {
+    setExpandedCategories(new Set(Object.keys(filteredGroupedData)));
   };
+
+  const collapseAll = () => {
+    setExpandedCategories(new Set());
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <SidebarNavigation currentPage="knowledge" stats={stats} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4 mx-auto"></div>
+            <p className="text-gray-600">Loading your knowledge database...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <SidebarNavigation currentPage="knowledge" stats={stats} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-red-800 font-medium mb-2">Error Loading Data</h3>
+            <p className="text-red-700 text-sm">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-3 bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar Navigation Component */}
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <SidebarNavigation currentPage="knowledge" stats={stats} />
-
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
+      
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto p-6">
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Knowledge Database</h1>
-            <p className="text-gray-600">
-              {loading ? 'Loading knowledge items...' : 
-               `${filteredItems.length} of ${knowledgeItems.length} knowledge items`}
-              {selectedMainCategory && ` in ${selectedMainCategory}`}
-              {selectedSubCategory && ` → ${selectedSubCategory}`}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Knowledge Database</h1>
+            <p className="text-gray-600 text-lg">
+              Organized view of your {knowledgeItems.length} knowledge items across {Object.keys(groupedByMainCategory).length} categories
             </p>
           </div>
 
-          {/* Search Bar */}
-          <div className="mb-6">
-            <div className="relative">
+          {/* Controls */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
               <input
                 type="text"
-                placeholder="Search knowledge items..."
+                placeholder="Search across all categories..."
                 value={searchTerm}
-                onChange={handleSearch}
-                className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               />
               <div className="absolute left-3 top-3 text-gray-400">
                 🔍
               </div>
             </div>
+
+            {/* Expand/Collapse Controls */}
+            <div className="flex gap-2">
+              <button
+                onClick={expandAll}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Expand All
+              </button>
+              <button
+                onClick={collapseAll}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+              >
+                Collapse All
+              </button>
+            </div>
           </div>
 
-          {/* Category Filter */}
-          <CategoryFilter
-            categories={categories}
-            selectedMainCategory={selectedMainCategory}
-            selectedSubCategory={selectedSubCategory}
-            onFilterChange={handleFilterChange}
-          />
-
-          {/* Stats Summary */}
-          {stats && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">{stats.total_items}</div>
-                  <div className="text-xs text-gray-600">Total Items</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">{stats.unique_main_categories}</div>
-                  <div className="text-xs text-gray-600">Main Categories</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">{stats.unique_sub_categories}</div>
-                  <div className="text-xs text-gray-600">Sub Categories</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-orange-600">{stats.unique_tags}</div>
-                  <div className="text-xs text-gray-600">Unique Tags</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-red-600">
-                    {stats.avg_strength_score ? (stats.avg_strength_score * 100).toFixed(0) + '%' : 'N/A'}
-                  </div>
-                  <div className="text-xs text-gray-600">Avg Strength</div>
-                </div>
-              </div>
+          {/* Categories Grid */}
+          {Object.keys(filteredGroupedData).length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {Object.entries(filteredGroupedData)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([mainCategory, items]) => (
+                  <MainCategoryCard
+                    key={mainCategory}
+                    mainCategory={mainCategory}
+                    data={items}
+                    isExpanded={expandedCategories.has(mainCategory)}
+                    onToggle={() => toggleCategory(mainCategory)}
+                  />
+                ))}
             </div>
-          )}
-
-          {/* Loading State */}
-          {loading && (
-            <div className="flex flex-col justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-              <p className="text-gray-600">Loading knowledge items...</p>
-            </div>
-          )}
-
-          {/* Error State */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center">
-                <div className="text-red-600 mr-2">⚠️</div>
-                <div>
-                  <h3 className="text-red-800 font-medium">Error</h3>
-                  <p className="text-red-700 text-sm">{error}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-3 bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {/* Knowledge Items Grid */}
-          {!loading && !error && filteredItems.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map(item => (
-                <KnowledgeCard
-                  key={item.id}
-                  id={item.id}
-                  main_category={item.main_category}
-                  sub_category={item.sub_category}
-                  content={item.content}
-                  tags={item.tags}
-                  source={item.source}
-                  strength_score={item.strength_score}
-                  created_at={item.created_at}
-                  last_updated={item.last_updated}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && filteredItems.length === 0 && knowledgeItems.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📚</div>
-              <h3 className="text-lg font-medium text-gray-600 mb-2">No knowledge items found</h3>
-              <p className="text-gray-500 mb-4">
-                Your knowledge database is empty. Start adding knowledge to see it here.
-              </p>
-              <Link
-                href="/curate"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 inline-block"
-              >
-                Add Knowledge Item
-              </Link>
-            </div>
-          )}
-
-          {/* Filtered Empty State */}
-          {!loading && !error && filteredItems.length === 0 && knowledgeItems.length > 0 && (
+          ) : (
             <div className="text-center py-12">
               <div className="text-gray-400 text-6xl mb-4">🔍</div>
-              <h3 className="text-lg font-medium text-gray-600 mb-2">No items match your filters</h3>
-              <p className="text-gray-500 mb-4">
-                Try adjusting your search term or category filters.
+              <h3 className="text-xl font-medium text-gray-600 mb-2">
+                {searchTerm ? 'No matching items found' : 'No knowledge items found'}
+              </h3>
+              <p className="text-gray-500">
+                {searchTerm 
+                  ? 'Try adjusting your search terms or clear the search to see all items.'
+                  : 'Start adding knowledge items to see them organized here.'
+                }
               </p>
-              <button
-                onClick={() => {
-                  setSelectedMainCategory('');
-                  setSelectedSubCategory('');
-                  setSearchTerm('');
-                }}
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-              >
-                Clear Filters
-              </button>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                >
+                  Clear Search
+                </button>
+              )}
             </div>
           )}
         </div>
