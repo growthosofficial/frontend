@@ -1,4 +1,5 @@
 {
   "/knowledge/page": "app/knowledge/page.js",
+  "/api/generate-embedding/route": "app/api/generate-embedding/route.js",
   "/curate/page": "app/curate/page.js"
 }

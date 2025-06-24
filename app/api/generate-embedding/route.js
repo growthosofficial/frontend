@@ -45,27 +45,33 @@ export async function POST(request) {
       text_length: cleanText.length,
     });
 
-  } catch (error) {
-    console.error('Embedding generation error:', error);
-    
-    // Handle different types of errors
-    if (error.code === 'insufficient_quota') {
-      return Response.json(
-        { error: 'Azure OpenAI quota exceeded' },
-        { status: 429 }
-      );
-    }
-    
-    if (error.code === 'invalid_request_error') {
-      return Response.json(
-        { error: 'Invalid request to Azure OpenAI' },
-        { status: 400 }
-      );
-    }
-
+} catch (error) {
+  console.error('Embedding generation error:', {
+    message: error.message,
+    code: error.code,
+    type: error.type,
+    status: error.status,
+    stack: error.stack
+  });
+  
+  // More specific error handling
+  if (error.message?.includes('404')) {
     return Response.json(
-      { error: 'Failed to generate embedding', details: error.message },
-      { status: 500 }
+      { error: 'Azure OpenAI deployment not found. Check AZURE_OPENAI_EMBEDDING_DEPLOYMENT' },
+      { status: 404 }
     );
   }
+  
+  if (error.message?.includes('401') || error.message?.includes('403')) {
+    return Response.json(
+      { error: 'Azure OpenAI authentication failed. Check AZURE_OPENAI_API_KEY' },
+      { status: 401 }
+    );
+  }
+
+  return Response.json(
+    { error: 'Failed to generate embedding', details: error.message, code: error.code },
+    { status: 500 }
+  );
+}
 }

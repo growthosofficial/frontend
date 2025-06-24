@@ -7,12 +7,15 @@ import SidebarNavigation from '../../components/SidebarNavigation';
 
 export default function CurateKnowledgePage() {
   const [inputText, setInputText] = useState('');
+  const [goal, setGoal] = useState(''); // New goal state
   const [isProcessing, setIsProcessing] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
   const [similarMainCategory, setSimilarMainCategory] = useState(null);
   const [similarSubCategory, setSimilarSubCategory] = useState(null);
   const [similarityScore, setSimilarityScore] = useState(null);
+  const [goalSummary, setGoalSummary] = useState(null); // New goal summary state
   const [stats, setStats] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [inputMode, setInputMode] = useState('text'); // Default to text mode
@@ -98,12 +101,15 @@ export default function CurateKnowledgePage() {
     setIsProcessing(true);
     setError(null);
     setSuccessMessage('');
+    setRecommendations(null);
+    setGoalSummary(null);
 
     try {
       console.log('🚀 Processing text with backend...');
+      console.log('🎯 Goal provided:', !!goal);
       
-      // Call backend for AI processing and recommendations
-      const result = await processText(inputText, similarityThreshold);
+      // Call backend for AI processing and recommendations with goal
+      const result = await processText(inputText, similarityThreshold, goal.trim() || null);
       console.log('✅ Backend response:', result);
       
       // Handle the response structure
@@ -112,8 +118,14 @@ export default function CurateKnowledgePage() {
         setSimilarMainCategory(result.similar_main_category);
         setSimilarSubCategory(result.similar_sub_category);
         setSimilarityScore(result.similarity_score);
+        setGoalSummary(result.goal_summary); // Set goal summary
         
         console.log(`📊 Found ${result.recommendations.length} recommendations`);
+        
+        // Log goal-aware recommendations
+        const goalAwareCount = result.recommendations.filter(r => r.is_goal_aware).length;
+        console.log(`🎯 Goal-aware recommendations: ${goalAwareCount}/${result.recommendations.length}`);
+        
         if (result.similar_main_category) {
           console.log(`🔍 Similar content found: ${result.similar_main_category} → ${result.similar_sub_category} (${(result.similarity_score * 100).toFixed(1)}% similarity)`);
         }
@@ -157,13 +169,26 @@ export default function CurateKnowledgePage() {
         tags = ['knowledge'];
       }
 
-      // Create knowledge item using new schema
+      // Create knowledge item using new schema with enhanced metadata
       const knowledgeItem = {
         main_category: recommendation.main_category,
         sub_category: recommendation.sub_category,
         content: recommendation.updated_text,
         tags: tags,
         source: 'text',
+        // Add goal-related metadata if available
+        metadata: {
+          action_type: recommendation.action_type,
+          reasoning: recommendation.reasoning,
+          semantic_coherence: recommendation.semantic_coherence,
+          ...(recommendation.is_goal_aware && {
+            goal_aware: true,
+            relevance_score: recommendation.relevance_score,
+            goal_alignment: recommendation.goal_alignment,
+            goal_priority: recommendation.goal_priority,
+            original_goal: goal
+          })
+        }
       };
 
       console.log('⚡ Processing knowledge item (create or update)...');
@@ -189,6 +214,11 @@ export default function CurateKnowledgePage() {
           successMessage = `✅ Successfully processed: ${recommendation.main_category} → ${recommendation.sub_category}`;
       }
       
+      // Add goal relevance info to success message if available
+      if (recommendation.is_goal_aware && recommendation.relevance_score && goal) {
+        successMessage += ` (Goal relevance: ${recommendation.relevance_score}/10)`;
+      }
+      
       setSuccessMessage(successMessage);
 
       // Show additional info if there was similar content
@@ -210,7 +240,9 @@ export default function CurateKnowledgePage() {
       setSimilarMainCategory(null);
       setSimilarSubCategory(null);
       setSimilarityScore(null);
+      setGoalSummary(null);
       setInputText('');
+      setGoal(''); // Clear goal too
 
       // Auto-clear success message after 7 seconds (longer to read the detailed message)
       setTimeout(() => {
@@ -239,7 +271,9 @@ export default function CurateKnowledgePage() {
     setSimilarMainCategory(null);
     setSimilarSubCategory(null);
     setSimilarityScore(null);
+    setGoalSummary(null); // Clear goal summary
     setInputText('');
+    setGoal(''); // Clear goal
     setError(null);
     setSuccessMessage('📝 Input discarded. Ready for new knowledge.');
 
@@ -302,6 +336,29 @@ export default function CurateKnowledgePage() {
               ✏️ Enter Text
             </button>
           </div>
+
+          {/* Goal Input Section */}
+          {inputMode === 'text' && (
+            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-4">
+              <label className="block text-sm font-medium text-white mb-3">
+                🎯 Learning Goal (Optional)
+              </label>
+              <textarea
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                placeholder="What's your current learning objective? e.g., 'Learn machine learning for building recommendation systems'"
+                className="w-full h-16 px-4 py-3 bg-white/90 border border-white/30 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
+                disabled={isProcessing}
+                maxLength={500}
+              />
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-sm text-white/70">
+                  Providing a goal helps AI prioritize and assess relevance of knowledge
+                </p>
+                <span className="text-xs text-white/50">{goal.length}/500</span>
+              </div>
+            </div>
+          )}
 
           {/* Upload Area or Text Input */}
           {inputMode === 'upload' ? (
@@ -387,6 +444,17 @@ export default function CurateKnowledgePage() {
             </div>
           )}
 
+          {/* Goal Summary */}
+          {goalSummary && (
+            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mb-6 border border-blue-400/30">
+              <div className="flex items-center gap-2 mb-2">
+                <span>🎯</span>
+                <h3 className="font-medium text-blue-200">Goal Analysis Summary</h3>
+              </div>
+              <p className="text-blue-100 text-sm">{goalSummary}</p>
+            </div>
+          )}
+
           {/* Recommendations Card */}
           {recommendations && (
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6 border border-white/20">
@@ -415,6 +483,8 @@ export default function CurateKnowledgePage() {
                     <div>similarSubCategory: {JSON.stringify(similarSubCategory)}</div>
                     <div>similarityScore: {JSON.stringify(similarityScore)}</div>
                     <div>similarityThreshold: {JSON.stringify(similarityThreshold)}</div>
+                    <div>goalProvided: {JSON.stringify(!!goal)}</div>
+                    <div>goalSummary: {JSON.stringify(goalSummary)}</div>
                     <div>Should show notification: {JSON.stringify(!!similarMainCategory && similarityScore >= similarityThreshold)}</div>
                   </div>
                 </div>
@@ -483,15 +553,51 @@ export default function CurateKnowledgePage() {
                           {/* Option Header */}
                           <div className="mb-3">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                rec.is_goal_aware ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'
+                              }`}>
                                 Option {rec.option_number}
                               </span>
-                              <span className="text-white/70 text-xs bg-white/10 px-2 py-1 rounded">
-                                {rec.change}
+                              {rec.is_goal_aware && (
+                                <span className="bg-blue-400/30 text-blue-200 px-2 py-1 rounded text-xs">
+                                  Goal-Aware
+                                </span>
+                              )}
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                rec.action_type === 'create_new' ? 'bg-green-400/30 text-green-200' :
+                                rec.action_type === 'merge' ? 'bg-yellow-400/30 text-yellow-200' :
+                                'bg-blue-400/30 text-blue-200'
+                              }`}>
+                                {rec.action_type?.replace('_', ' ').toUpperCase()}
                               </span>
                             </div>
+                            
+                            {/* Goal-specific info */}
+                            {rec.is_goal_aware && rec.relevance_score && (
+                              <div className="mb-3 p-3 bg-blue-500/20 rounded-lg border border-blue-400/30">
+                                <div className="flex items-center space-x-4 text-sm">
+                                  <span className="text-blue-200 font-medium">
+                                    Relevance: {rec.relevance_score}/10
+                                  </span>
+                                  <span className={`px-2 py-1 rounded text-xs ${
+                                    rec.goal_priority === 'high' ? 'bg-red-400/30 text-red-200' :
+                                    rec.goal_priority === 'medium' ? 'bg-yellow-400/30 text-yellow-200' :
+                                    'bg-green-400/30 text-green-200'
+                                  }`}>
+                                    {rec.goal_priority?.toUpperCase()} PRIORITY
+                                  </span>
+                                </div>
+                                {rec.goal_alignment && (
+                                  <p className="text-sm text-blue-100 mt-2">{rec.goal_alignment}</p>
+                                )}
+                              </div>
+                            )}
+                            
                             <div className="text-white font-medium">
                               {rec.main_category} → {rec.sub_category}
+                            </div>
+                            <div className="text-white/70 text-sm mt-1">
+                              {rec.change}
                             </div>
                           </div>
 
@@ -502,10 +608,10 @@ export default function CurateKnowledgePage() {
                             </div>
                           </div>
 
-                          {/* Tags */}
+                          {/* Tags - Simplified Display */}
                           {rec.tags && rec.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
-                              {rec.tags.map((tag, index) => (
+                              {rec.tags.slice(0, 3).map((tag, index) => ( // Only show first 3 tags
                                 <span
                                   key={index}
                                   className="bg-blue-400/20 text-blue-200 px-2 py-1 rounded text-xs border border-blue-400/30"
@@ -513,6 +619,11 @@ export default function CurateKnowledgePage() {
                                   {tag}
                                 </span>
                               ))}
+                              {rec.tags.length > 3 && (
+                                <span className="text-blue-300 text-xs px-2 py-1">
+                                  +{rec.tags.length - 3} more
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
