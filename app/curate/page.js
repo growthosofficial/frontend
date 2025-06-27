@@ -14,6 +14,7 @@ export default function CurateKnowledgePage() {
   const [similarSubCategory, setSimilarSubCategory] = useState(null);
   const [similarityScore, setSimilarityScore] = useState(null);
   const [goalSummary, setGoalSummary] = useState(null); // New goal summary state
+  const [goalRelevanceScore, setGoalRelevanceScore] = useState(null); // New goal relevance score state
   const [stats, setStats] = useState(null);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
@@ -103,6 +104,7 @@ export default function CurateKnowledgePage() {
     setSuccessMessage('');
     setRecommendations(null);
     setGoalSummary(null);
+    setGoalRelevanceScore(null);
 
     try {
       console.log('🚀 Processing text with backend...');
@@ -114,16 +116,73 @@ export default function CurateKnowledgePage() {
       
       // Handle the response structure
       if (result.status === 'success' && result.recommendations) {
-        setRecommendations(result.recommendations);
+        // Map the new response structure to what the frontend expects
+        const mappedRecommendations = result.recommendations.map(rec => ({
+          ...rec,
+          // Add computed fields that the frontend expects
+          updated_text: rec.instructions || '', // Use instructions as updated_text for now
+          preview: rec.instructions ? (rec.instructions.substring(0, 200) + '...') : 'No preview available',
+          is_goal_aware: result.goal_provided && result.goal_relevance_score !== null,
+          relevance_score: result.goal_relevance_score,
+          goal_alignment: result.goal_relevance_explanation,
+          goal_priority: result.goal_relevance_score >= 7 ? 'high' : 
+                        result.goal_relevance_score >= 4 ? 'medium' : 'low'
+        }));
+        
+        // Generate previews for each recommendation
+        console.log('🔄 Generating previews for recommendations...');
+        const recommendationsWithPreviews = await Promise.all(
+          mappedRecommendations.map(async (rec) => {
+            try {
+              const previewResponse = await fetch('/api/generate-preview', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  input_text: inputText,
+                  instructions: rec.instructions,
+                  main_category: rec.main_category,
+                  sub_category: rec.sub_category,
+                  action_type: rec.action_type,
+                  goal: goal.trim() || null
+                }),
+              });
+
+              if (previewResponse.ok) {
+                const previewResult = await previewResponse.json();
+                return {
+                  ...rec,
+                  preview: previewResult.preview || 'Preview generation failed'
+                };
+              } else {
+                console.warn(`Failed to generate preview for option ${rec.option_number}`);
+                return {
+                  ...rec,
+                  preview: 'Preview generation failed'
+                };
+              }
+            } catch (error) {
+              console.error(`Error generating preview for option ${rec.option_number}:`, error);
+              return {
+                ...rec,
+                preview: 'Preview generation failed'
+              };
+            }
+          })
+        );
+        
+        setRecommendations(recommendationsWithPreviews);
         setSimilarMainCategory(result.similar_main_category);
         setSimilarSubCategory(result.similar_sub_category);
         setSimilarityScore(result.similarity_score);
-        setGoalSummary(result.goal_summary); // Set goal summary
+        setGoalSummary(result.goal_relevance_explanation); // Use goal_relevance_explanation as goal summary
+        setGoalRelevanceScore(result.goal_relevance_score); // Set goal relevance score
         
-        console.log(`📊 Found ${result.recommendations.length} recommendations`);
+        console.log(`📊 Found ${result.recommendations.length} recommendations with previews`);
         
         // Log goal-aware recommendations
-        const goalAwareCount = result.recommendations.filter(r => r.is_goal_aware).length;
+        const goalAwareCount = result.goal_provided ? result.recommendations.length : 0;
         console.log(`🎯 Goal-aware recommendations: ${goalAwareCount}/${result.recommendations.length}`);
         
         if (result.similar_main_category) {
@@ -147,7 +206,7 @@ export default function CurateKnowledgePage() {
     try {
       console.log('🚀 Applying recommendation:', recommendation);
       console.log(`📂 Category: ${recommendation.main_category} → ${recommendation.sub_category}`);
-      console.log('📝 Content length:', recommendation.updated_text?.length || 0);
+      console.log('📝 Instructions length:', recommendation.instructions?.length || 0);
       console.log('🏷️ Tags:', recommendation.tags);
 
       // Validate recommendation data
@@ -155,9 +214,35 @@ export default function CurateKnowledgePage() {
         throw new Error('Recommendation missing required category information');
       }
 
-      if (!recommendation.updated_text) {
-        throw new Error('Recommendation missing content');
+      if (!recommendation.instructions) {
+        throw new Error('Recommendation missing instructions');
       }
+
+      // Call Phase 2 LLM processing
+      console.log('🔄 Calling Phase 2 LLM processing...');
+      const phase2Response = await fetch('/api/knowledge-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action_type: recommendation.action_type,
+          input_text: inputText,
+          instructions: recommendation.instructions,
+          similar_knowledge: similarMainCategory ? `${similarMainCategory} → ${similarSubCategory}` : null,
+          main_category: recommendation.main_category,
+          sub_category: recommendation.sub_category,
+          tags: recommendation.tags || []
+        }),
+      });
+
+      if (!phase2Response.ok) {
+        const errorData = await phase2Response.json();
+        throw new Error(errorData.error || `Phase 2 processing failed: ${phase2Response.status}`);
+      }
+
+      const phase2Result = await phase2Response.json();
+      console.log('✅ Phase 2 processing completed:', phase2Result);
 
       // Ensure tags is an array
       let tags = [];
@@ -169,23 +254,24 @@ export default function CurateKnowledgePage() {
         tags = ['knowledge'];
       }
 
-      // Create knowledge item using new schema with enhanced metadata
+      // Create knowledge item using the processed text and embedding from Phase 2
       const knowledgeItem = {
         main_category: recommendation.main_category,
         sub_category: recommendation.sub_category,
-        content: recommendation.updated_text,
+        content: phase2Result.processed_text,
         tags: tags,
         source: 'text',
+        embedding: phase2Result.embedding,
         // Add goal-related metadata if available
         metadata: {
           action_type: recommendation.action_type,
-          reasoning: recommendation.reasoning,
-          semantic_coherence: recommendation.semantic_coherence,
-          ...(recommendation.is_goal_aware && {
+          instructions: recommendation.instructions,
+          change_description: recommendation.change,
+          phase2_processed: true,
+          ...(goal && {
             goal_aware: true,
             relevance_score: recommendation.relevance_score,
             goal_alignment: recommendation.goal_alignment,
-            goal_priority: recommendation.goal_priority,
             original_goal: goal
           })
         }
@@ -215,7 +301,7 @@ export default function CurateKnowledgePage() {
       }
       
       // Add goal relevance info to success message if available
-      if (recommendation.is_goal_aware && recommendation.relevance_score && goal) {
+      if (goal && recommendation.relevance_score) {
         successMessage += ` (Goal relevance: ${recommendation.relevance_score}/10)`;
       }
       
@@ -241,6 +327,7 @@ export default function CurateKnowledgePage() {
       setSimilarSubCategory(null);
       setSimilarityScore(null);
       setGoalSummary(null);
+      setGoalRelevanceScore(null); // Clear goal relevance score
       setInputText('');
       setGoal(''); // Clear goal too
 
@@ -272,6 +359,7 @@ export default function CurateKnowledgePage() {
     setSimilarSubCategory(null);
     setSimilarityScore(null);
     setGoalSummary(null); // Clear goal summary
+    setGoalRelevanceScore(null); // Clear goal relevance score
     setInputText('');
     setGoal(''); // Clear goal
     setError(null);
@@ -444,14 +532,35 @@ export default function CurateKnowledgePage() {
             </div>
           )}
 
-          {/* Goal Summary */}
-          {goalSummary && (
-            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mb-6 border border-blue-400/30">
-              <div className="flex items-center gap-2 mb-2">
+          {/* Goal Relevance Analysis */}
+          {goal && goalSummary && (
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md rounded-lg p-4 mb-6 border border-blue-400/30">
+              <div className="flex items-center gap-2 mb-3">
                 <span>🎯</span>
-                <h3 className="font-medium text-blue-200">Goal Analysis Summary</h3>
+                <h3 className="font-medium text-blue-200">Goal Relevance Analysis</h3>
               </div>
-              <p className="text-blue-100 text-sm">{goalSummary}</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-blue-100 text-sm font-medium">Relevance Score:</span>
+                  <span className="px-3 py-1 bg-blue-500/30 text-blue-200 rounded-full text-sm font-semibold">
+                    {goalRelevanceScore || 'N/A'}/10
+                  </span>
+                  {/* Priority badge */}
+                  {goalRelevanceScore && (
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      goalRelevanceScore >= 7 ? 'bg-red-400/30 text-red-200' :
+                      goalRelevanceScore >= 4 ? 'bg-yellow-400/30 text-yellow-200' :
+                      'bg-green-400/30 text-green-200'
+                    }`}>
+                      {goalRelevanceScore >= 7 ? 'HIGH' : goalRelevanceScore >= 4 ? 'MEDIUM' : 'LOW'} PRIORITY
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-blue-100 text-sm font-medium block mb-1">Analysis:</span>
+                  <p className="text-blue-100 text-sm leading-relaxed">{goalSummary}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -554,15 +663,13 @@ export default function CurateKnowledgePage() {
                           <div className="mb-3">
                             <div className="flex items-center gap-2 mb-2">
                               <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                                rec.is_goal_aware ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'
+                                rec.option_number === 1 || rec.option_number === 2 
+                                  ? 'bg-violet-500 text-white' 
+                                  : 'bg-blue-500 text-white'
                               }`}>
                                 Option {rec.option_number}
                               </span>
-                              {rec.is_goal_aware && (
-                                <span className="bg-blue-400/30 text-blue-200 px-2 py-1 rounded text-xs">
-                                  Goal-Aware
-                                </span>
-                              )}
+                              {/* Removed Goal-Aware, Priority, and Relevance badges from here */}
                               <span className={`text-xs px-2 py-1 rounded ${
                                 rec.action_type === 'create_new' ? 'bg-green-400/30 text-green-200' :
                                 rec.action_type === 'merge' ? 'bg-yellow-400/30 text-yellow-200' :
@@ -571,28 +678,6 @@ export default function CurateKnowledgePage() {
                                 {rec.action_type?.replace('_', ' ').toUpperCase()}
                               </span>
                             </div>
-                            
-                            {/* Goal-specific info */}
-                            {rec.is_goal_aware && rec.relevance_score && (
-                              <div className="mb-3 p-3 bg-blue-500/20 rounded-lg border border-blue-400/30">
-                                <div className="flex items-center space-x-4 text-sm">
-                                  <span className="text-blue-200 font-medium">
-                                    Relevance: {rec.relevance_score}/10
-                                  </span>
-                                  <span className={`px-2 py-1 rounded text-xs ${
-                                    rec.goal_priority === 'high' ? 'bg-red-400/30 text-red-200' :
-                                    rec.goal_priority === 'medium' ? 'bg-yellow-400/30 text-yellow-200' :
-                                    'bg-green-400/30 text-green-200'
-                                  }`}>
-                                    {rec.goal_priority?.toUpperCase()} PRIORITY
-                                  </span>
-                                </div>
-                                {rec.goal_alignment && (
-                                  <p className="text-sm text-blue-100 mt-2">{rec.goal_alignment}</p>
-                                )}
-                              </div>
-                            )}
-                            
                             <div className="text-white font-medium">
                               {rec.main_category} → {rec.sub_category}
                             </div>
@@ -604,7 +689,14 @@ export default function CurateKnowledgePage() {
                           {/* Content Preview */}
                           <div className="mb-3">
                             <div className="bg-white/10 rounded p-3 text-sm text-white/80 max-h-24 overflow-y-auto">
-                              {rec.preview || rec.updated_text?.substring(0, 200) + '...' || 'No preview available'}
+                              {rec.preview ? (
+                                rec.preview
+                              ) : (
+                                <div className="flex items-center gap-2 text-white/60">
+                                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-white/30 border-t-white"></div>
+                                  <span>Generating preview...</span>
+                                </div>
+                              )}
                             </div>
                           </div>
 
