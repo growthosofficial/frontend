@@ -73,8 +73,8 @@ const SubCategorySection = ({ subCategory, items }) => {
         </h3>
       </div>
 
-      {/* Knowledge Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Knowledge Items Grid - 2 columns with responsive behavior */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 w-full">
         {items.map(item => (
           <KnowledgeItemCard key={item.id} item={item} />
         ))}
@@ -173,8 +173,8 @@ const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-6 pb-6">
-          <div className="bg-black/10 rounded-lg p-6">
+        <div className="px-6 pb-6 w-full">
+          <div className="bg-black/10 rounded-lg px-4 py-6 w-full">
             {Object.entries(groupedBySubCategory)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([subCategory, items]) => (

@@ -107,86 +107,77 @@ export default function CurateKnowledgePage() {
     setGoalRelevanceScore(null);
 
     try {
-      console.log('🚀 Processing text with backend...');
+      console.log('🚀 Starting parallel processing...');
       console.log('🎯 Goal provided:', !!goal);
       
-      // Call backend for AI processing and recommendations with goal
-      const result = await processText(inputText, similarityThreshold, goal.trim() || null);
-      console.log('✅ Backend response:', result);
+      // 🚀 RUN BOTH APIs IN TRUE PARALLEL
+      const [backendResult, previewResult] = await Promise.all([
+        // Backend processing
+        processText(inputText, similarityThreshold, goal.trim() || null)
+          .catch(error => {
+            console.error('❌ Backend processing failed:', error);
+            throw new Error(`Backend processing failed: ${error.message}`);
+          }),
+        
+        // Preview generation
+        fetch('/api/generate-preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input_text: inputText }),
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Preview API returned ${response.status}`);
+          }
+          return response.json();
+        })
+        .catch(error => {
+          console.error('❌ Preview generation failed:', error);
+          // Don't throw here, just return a fallback preview
+          return { preview: 'Preview generation failed - processing continues...' };
+        })
+      ]);
       
-      // Handle the response structure
-      if (result.status === 'success' && result.recommendations) {
+      console.log('✅ Backend response:', backendResult);
+      console.log('✅ Preview result:', previewResult);
+      
+      // Handle the backend response structure
+      if (backendResult.status === 'success' && backendResult.recommendations) {
         // Map the new response structure to what the frontend expects
-        const mappedRecommendations = result.recommendations.map(rec => ({
+        const mappedRecommendations = backendResult.recommendations.map(rec => ({
           ...rec,
           // Add computed fields that the frontend expects
-          updated_text: rec.instructions || '', // Use instructions as updated_text for now
-          preview: rec.instructions ? (rec.instructions.substring(0, 200) + '...') : 'No preview available',
-          is_goal_aware: result.goal_provided && result.goal_relevance_score !== null,
-          relevance_score: result.goal_relevance_score,
-          goal_alignment: result.goal_relevance_explanation,
-          goal_priority: result.goal_relevance_score >= 7 ? 'high' : 
-                        result.goal_relevance_score >= 4 ? 'medium' : 'low'
+          updated_text: rec.instructions || '',
+          preview: previewResult.preview || 'No preview available',
+          is_goal_aware: backendResult.goal_provided && backendResult.goal_relevance_score !== null,
+          relevance_score: backendResult.goal_relevance_score,
+          goal_alignment: backendResult.goal_relevance_explanation,
+          goal_priority: rec.goal_priority || 'medium',
+          // Ensure all required fields are present
+          option_number: rec.option_number || 0,
+          change: rec.change || '',
+          instructions: rec.instructions || '',
+          main_category: rec.main_category || 'General Studies',
+          sub_category: rec.sub_category || 'General',
+          tags: rec.tags || [],
+          action_type: rec.action_type || 'create_new'
         }));
         
-        // Generate previews for each recommendation
-        console.log('🔄 Generating previews for recommendations...');
-        const recommendationsWithPreviews = await Promise.all(
-          mappedRecommendations.map(async (rec) => {
-            try {
-              const previewResponse = await fetch('/api/generate-preview', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  input_text: inputText,
-                  instructions: rec.instructions,
-                  main_category: rec.main_category,
-                  sub_category: rec.sub_category,
-                  action_type: rec.action_type,
-                  goal: goal.trim() || null
-                }),
-              });
-
-              if (previewResponse.ok) {
-                const previewResult = await previewResponse.json();
-                return {
-                  ...rec,
-                  preview: previewResult.preview || 'Preview generation failed'
-                };
-              } else {
-                console.warn(`Failed to generate preview for option ${rec.option_number}`);
-                return {
-                  ...rec,
-                  preview: 'Preview generation failed'
-                };
-              }
-            } catch (error) {
-              console.error(`Error generating preview for option ${rec.option_number}:`, error);
-              return {
-                ...rec,
-                preview: 'Preview generation failed'
-              };
-            }
-          })
-        );
+        setRecommendations(mappedRecommendations);
+        setSimilarMainCategory(backendResult.similar_main_category);
+        setSimilarSubCategory(backendResult.similar_sub_category);
+        setSimilarityScore(backendResult.similarity_score);
+        setGoalSummary(backendResult.goal_relevance_explanation);
+        setGoalRelevanceScore(backendResult.goal_relevance_score);
         
-        setRecommendations(recommendationsWithPreviews);
-        setSimilarMainCategory(result.similar_main_category);
-        setSimilarSubCategory(result.similar_sub_category);
-        setSimilarityScore(result.similarity_score);
-        setGoalSummary(result.goal_relevance_explanation); // Use goal_relevance_explanation as goal summary
-        setGoalRelevanceScore(result.goal_relevance_score); // Set goal relevance score
-        
-        console.log(`📊 Found ${result.recommendations.length} recommendations with previews`);
+        console.log(`📊 Found ${backendResult.recommendations.length} recommendations with previews`);
         
         // Log goal-aware recommendations
-        const goalAwareCount = result.goal_provided ? result.recommendations.length : 0;
-        console.log(`🎯 Goal-aware recommendations: ${goalAwareCount}/${result.recommendations.length}`);
+        const goalAwareCount = backendResult.goal_provided ? backendResult.recommendations.length : 0;
+        console.log(`🎯 Goal-aware recommendations: ${goalAwareCount}/${backendResult.recommendations.length}`);
         
-        if (result.similar_main_category) {
-          console.log(`🔍 Similar content found: ${result.similar_main_category} → ${result.similar_sub_category} (${(result.similarity_score * 100).toFixed(1)}% similarity)`);
+        if (backendResult.similar_main_category) {
+          console.log(`🔍 Similar content found: ${backendResult.similar_main_category} → ${backendResult.similar_sub_category} (${(backendResult.similarity_score * 100).toFixed(1)}% similarity)`);
         }
       } else {
         throw new Error('Invalid response format from backend');
@@ -388,7 +379,7 @@ export default function CurateKnowledgePage() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-600 via-navy-600 to-white">
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Sidebar Navigation */}
       <SidebarNavigation currentPage="curate" stats={stats} />
 
@@ -397,8 +388,8 @@ export default function CurateKnowledgePage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-white mb-2">Curate Knowledge</h1>
-            <p className="text-blue-100">Process and organize your knowledge with AI assistance</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Curate Knowledge</h1>
+            <p className="text-gray-600">Process and organize your knowledge with AI assistance</p>
           </div>
 
           {/* Input Mode Toggle */}
@@ -408,7 +399,7 @@ export default function CurateKnowledgePage() {
               className={`px-4 py-2 rounded text-sm transition-colors ${
                 inputMode === 'upload'
                   ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  : 'bg-white/80 text-gray-700 hover:bg-white/90'
               }`}
             >
               📄 Upload File
@@ -418,7 +409,7 @@ export default function CurateKnowledgePage() {
               className={`px-4 py-2 rounded text-sm transition-colors ${
                 inputMode === 'text'
                   ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  : 'bg-white/80 text-gray-700 hover:bg-white/90'
               }`}
             >
               ✏️ Enter Text
@@ -427,42 +418,42 @@ export default function CurateKnowledgePage() {
 
           {/* Goal Input Section */}
           {inputMode === 'text' && (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-4">
-              <label className="block text-sm font-medium text-white mb-3">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-4 border border-white/30">
+              <label className="block text-sm font-medium text-gray-800 mb-3">
                 🎯 Learning Goal (Optional)
               </label>
               <textarea
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
                 placeholder="What's your current learning objective? e.g., 'Learn machine learning for building recommendation systems'"
-                className="w-full h-16 px-4 py-3 bg-white/90 border border-white/30 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
+                className="w-full h-16 px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
                 disabled={isProcessing}
                 maxLength={500}
               />
               <div className="flex justify-between items-center mt-2">
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-gray-600">
                   Providing a goal helps AI prioritize and assess relevance of knowledge
                 </p>
-                <span className="text-xs text-white/50">{goal.length}/500</span>
+                <span className="text-xs text-gray-500">{goal.length}/500</span>
               </div>
             </div>
           )}
 
           {/* Upload Area or Text Input */}
           {inputMode === 'upload' ? (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-8 mb-6 border-2 border-dashed border-white/30 text-center">
-              <div className="text-white/70 mb-4">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 mb-6 border-2 border-dashed border-gray-300 text-center">
+              <div className="text-gray-500 mb-4">
                 <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <div className="text-lg font-medium text-white mb-2">Drop files here or click to upload</div>
-              <div className="text-sm text-white/70">Supports: .txt, .md, .pdf, .docx</div>
-              <div className="mt-4 text-sm text-yellow-200">📝 File upload coming soon - use text input for now</div>
+              <div className="text-lg font-medium text-gray-800 mb-2">Drop files here or click to upload</div>
+              <div className="text-sm text-gray-600">Supports: .txt, .md, .pdf, .docx</div>
+              <div className="mt-4 text-sm text-yellow-600">📝 File upload coming soon - use text input for now</div>
             </div>
           ) : (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6">
-              <label className="block text-sm font-medium text-white mb-3">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6 border border-white/30">
+              <label className="block text-sm font-medium text-gray-800 mb-3">
                 💭 What did you learn today?
               </label>
               <textarea
@@ -470,15 +461,15 @@ export default function CurateKnowledgePage() {
                 onChange={e => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Share insights, discoveries, or any knowledge you want to organize..."
-                className="w-full h-40 px-4 py-3 bg-white/90 border border-white/30 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
+                className="w-full h-40 px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
                 disabled={isProcessing}
               />
 
               <div className="flex justify-between items-center mt-4">
                 <div className="flex items-center gap-4">
-                  <div className="text-sm text-white/70">{inputText.length} characters</div>
+                  <div className="text-sm text-gray-600">{inputText.length} characters</div>
                   <div className="flex items-center gap-2">
-                    <label className="text-sm text-white/70">Similarity threshold:</label>
+                    <label className="text-sm text-gray-600">Similarity threshold:</label>
                     <input
                       type="range"
                       min="0.5"
@@ -488,7 +479,7 @@ export default function CurateKnowledgePage() {
                       onChange={e => setSimilarityThreshold(parseFloat(e.target.value))}
                       className="w-20"
                     />
-                    <span className="text-sm text-white/70">{(similarityThreshold * 100).toFixed(0)}%</span>
+                    <span className="text-sm text-gray-600">{(similarityThreshold * 100).toFixed(0)}%</span>
                   </div>
                 </div>
                 <button
@@ -514,7 +505,7 @@ export default function CurateKnowledgePage() {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/90 backdrop-blur-md text-white p-4 rounded-lg mb-6 border border-red-400">
+            <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-6 border border-red-200">
               <div className="flex items-center gap-2">
                 <span>❌</span>
                 <span>{error}</span>
@@ -524,7 +515,7 @@ export default function CurateKnowledgePage() {
 
           {/* Success Message */}
           {successMessage && (
-            <div className="bg-green-500/90 backdrop-blur-md text-white p-4 rounded-lg mb-6 border border-green-400">
+            <div className="bg-green-50 text-green-800 p-4 rounded-lg mb-6 border border-green-200">
               <div className="flex items-center gap-2">
                 <span>✅</span>
                 <span>{successMessage}</span>
@@ -534,31 +525,31 @@ export default function CurateKnowledgePage() {
 
           {/* Goal Relevance Analysis */}
           {goal && goalSummary && (
-            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md rounded-lg p-4 mb-6 border border-blue-400/30">
+            <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
               <div className="flex items-center gap-2 mb-3">
                 <span>🎯</span>
-                <h3 className="font-medium text-blue-200">Goal Relevance Analysis</h3>
+                <h3 className="font-medium text-blue-900">Goal Relevance Analysis</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-blue-100 text-sm font-medium">Relevance Score:</span>
-                  <span className="px-3 py-1 bg-blue-500/30 text-blue-200 rounded-full text-sm font-semibold">
+                  <span className="text-blue-800 text-sm font-medium">Relevance Score:</span>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
                     {goalRelevanceScore || 'N/A'}/10
                   </span>
                   {/* Priority badge */}
                   {goalRelevanceScore && (
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      goalRelevanceScore >= 7 ? 'bg-red-400/30 text-red-200' :
-                      goalRelevanceScore >= 4 ? 'bg-yellow-400/30 text-yellow-200' :
-                      'bg-green-400/30 text-green-200'
+                      goalRelevanceScore >= 7 ? 'bg-red-100 text-red-800' :
+                      goalRelevanceScore >= 4 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
                     }`}>
                       {goalRelevanceScore >= 7 ? 'HIGH' : goalRelevanceScore >= 4 ? 'MEDIUM' : 'LOW'} PRIORITY
                     </span>
                   )}
                 </div>
                 <div>
-                  <span className="text-blue-100 text-sm font-medium block mb-1">Analysis:</span>
-                  <p className="text-blue-100 text-sm leading-relaxed">{goalSummary}</p>
+                  <span className="text-blue-800 text-sm font-medium block mb-1">Analysis:</span>
+                  <p className="text-blue-800 text-sm leading-relaxed">{goalSummary}</p>
                 </div>
               </div>
             </div>
@@ -566,55 +557,40 @@ export default function CurateKnowledgePage() {
 
           {/* Recommendations Card */}
           {recommendations && (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6 border border-white/20">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6 border border-white/30">
               <div className="border-l-4 border-blue-400 pl-4 mb-6">
-                <h2 className="text-xl font-semibold text-white mb-2">AI Analysis & Recommendations</h2>
-                <p className="text-blue-100 text-sm">Your knowledge has been analyzed. Choose how to proceed:</p>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">AI Analysis & Recommendations</h2>
+                <p className="text-gray-600 text-sm">Your knowledge has been analyzed. Choose how to proceed:</p>
               </div>
 
               {/* Context Section */}
-              <div className="mb-6 bg-white/5 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-blue-200 mb-3 flex items-center gap-2">
+              <div className="mb-6 bg-white/60 rounded-lg p-4 border border-white/30">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   📊 INPUT CONTEXT:
                 </h3>
-                <div className="text-white/90 text-sm leading-relaxed max-h-32 overflow-y-auto">
+                <div className="text-gray-800 text-sm leading-relaxed max-h-32 overflow-y-auto">
                   {inputText}
                 </div>
               </div>
 
               {/* Enhanced Similar Category Info */}
-              {/* Debug Information - Remove after fixing */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
-                  <h4 className="text-yellow-200 font-semibold mb-2">🐛 DEBUG INFO:</h4>
-                  <div className="text-xs text-yellow-100 space-y-1">
-                    <div>similarMainCategory: {JSON.stringify(similarMainCategory)}</div>
-                    <div>similarSubCategory: {JSON.stringify(similarSubCategory)}</div>
-                    <div>similarityScore: {JSON.stringify(similarityScore)}</div>
-                    <div>similarityThreshold: {JSON.stringify(similarityThreshold)}</div>
-                    <div>goalProvided: {JSON.stringify(!!goal)}</div>
-                    <div>goalSummary: {JSON.stringify(goalSummary)}</div>
-                    <div>Should show notification: {JSON.stringify(!!similarMainCategory && similarityScore >= similarityThreshold)}</div>
-                  </div>
-                </div>
-              )}
               {similarMainCategory && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
-                  <h3 className="text-sm font-semibold text-blue-200 mb-3 flex items-center gap-2">
+                <div className="mb-6 p-4 bg-blue-50/80 rounded-lg border border-blue-200/50">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
                     🔍 SIMILAR CONTENT DETECTED:
                   </h3>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-blue-100 text-sm">
+                      <div className="text-blue-700 text-sm">
                         <div className="mb-1">
                           <span className="font-medium">Category:</span> 
-                          <span className="ml-2 bg-blue-500/30 px-2 py-1 rounded text-xs">
+                          <span className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs text-blue-800">
                             {similarMainCategory}
                           </span>
                           {similarSubCategory && (
                             <>
                               <span className="mx-2">→</span>
-                              <span className="bg-purple-500/30 px-2 py-1 rounded text-xs">
+                              <span className="bg-purple-100 px-2 py-1 rounded text-xs text-purple-800">
                                 {similarSubCategory}
                               </span>
                             </>
@@ -633,8 +609,8 @@ export default function CurateKnowledgePage() {
                     
                     {/* Similarity Warning */}
                     {similarityScore >= 0.8 && (
-                      <div className="mt-3 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
-                        <div className="flex items-center gap-2 text-yellow-200">
+                      <div className="mt-3 p-3 bg-yellow-50/80 border border-yellow-200/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-yellow-800">
                           <span>⚠️</span>
                           <span className="text-sm font-medium">
                             High similarity detected! Consider if this is truly new knowledge or if you should update existing content.
@@ -648,14 +624,14 @@ export default function CurateKnowledgePage() {
 
               {/* AI Recommendations */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-blue-200 mb-4 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
                   💡 AI RECOMMENDATIONS:
                 </h3>
                 <div className="space-y-4">
                   {recommendations.map(rec => (
                     <div
                       key={rec.option_number}
-                      className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-colors"
+                      className="bg-white/60 border border-white/30 rounded-lg p-4 hover:bg-white/80 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -669,31 +645,37 @@ export default function CurateKnowledgePage() {
                               }`}>
                                 Option {rec.option_number}
                               </span>
+                              {/* Goal-oriented badge for options 1 and 2 */}
+                              {rec.is_goal_aware && (rec.option_number === 1 || rec.option_number === 2) && (
+                                <span className="text-xs px-2 py-1 rounded bg-gradient-to-r from-yellow-400/30 to-orange-500/30 text-yellow-800 border border-yellow-400/30">
+                                  GOAL-ORIENTED
+                                </span>
+                              )}
                               {/* Removed Goal-Aware, Priority, and Relevance badges from here */}
                               <span className={`text-xs px-2 py-1 rounded ${
-                                rec.action_type === 'create_new' ? 'bg-green-400/30 text-green-200' :
-                                rec.action_type === 'merge' ? 'bg-yellow-400/30 text-yellow-200' :
-                                'bg-blue-400/30 text-blue-200'
+                                rec.action_type === 'create_new' ? 'bg-green-100 text-green-800' :
+                                rec.action_type === 'merge' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
                               }`}>
                                 {rec.action_type?.replace('_', ' ').toUpperCase()}
                               </span>
                             </div>
-                            <div className="text-white font-medium">
+                            <div className="text-gray-800 font-medium">
                               {rec.main_category} → {rec.sub_category}
                             </div>
-                            <div className="text-white/70 text-sm mt-1">
+                            <div className="text-gray-600 text-sm mt-1">
                               {rec.change}
                             </div>
                           </div>
 
                           {/* Content Preview */}
                           <div className="mb-3">
-                            <div className="bg-white/10 rounded p-3 text-sm text-white/80 max-h-24 overflow-y-auto">
+                            <div className="bg-white/80 rounded p-3 text-sm text-gray-700 max-h-24 overflow-y-auto">
                               {rec.preview ? (
                                 rec.preview
                               ) : (
-                                <div className="flex items-center gap-2 text-white/60">
-                                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-white/30 border-t-white"></div>
+                                <div className="flex items-center gap-2 text-gray-500">
+                                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-300 border-t-gray-600"></div>
                                   <span>Generating preview...</span>
                                 </div>
                               )}
@@ -706,13 +688,13 @@ export default function CurateKnowledgePage() {
                               {rec.tags.slice(0, 3).map((tag, index) => ( // Only show first 3 tags
                                 <span
                                   key={index}
-                                  className="bg-blue-400/20 text-blue-200 px-2 py-1 rounded text-xs border border-blue-400/30"
+                                  className="bg-blue-100/80 text-blue-800 px-2 py-1 rounded text-xs border border-blue-200/50"
                                 >
                                   {tag}
                                 </span>
                               ))}
                               {rec.tags.length > 3 && (
-                                <span className="text-blue-300 text-xs px-2 py-1">
+                                <span className="text-blue-600 text-xs px-2 py-1">
                                   +{rec.tags.length - 3} more
                                 </span>
                               )}
@@ -745,11 +727,11 @@ export default function CurateKnowledgePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4 border-t border-white/20">
+              <div className="flex gap-4 pt-4 border-t border-white/30">
                 <button
                   onClick={handleDoNothing}
                   disabled={isApplying || isProcessing}
-                  className="px-6 py-2 bg-white/10 text-white rounded hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/30"
+                  className="px-6 py-2 bg-white/60 text-gray-700 rounded hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/30"
                 >
                   🗑️ Discard Input
                 </button>
@@ -759,23 +741,23 @@ export default function CurateKnowledgePage() {
 
           {/* Bottom Stats */}
           {stats && (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/30">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.total_knowledge_items}</div>
-                  <div className="text-xs text-white/70">Total Items</div>
+                  <div className="text-2xl font-bold text-gray-800">{stats.total_knowledge_items}</div>
+                  <div className="text-xs text-gray-600">Total Items</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.unique_main_categories}</div>
-                  <div className="text-xs text-white/70">Main Categories</div>
+                  <div className="text-2xl font-bold text-gray-800">{stats.unique_main_categories}</div>
+                  <div className="text-xs text-gray-600">Main Categories</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.unique_sub_categories}</div>
-                  <div className="text-xs text-white/70">Sub Categories</div>
+                  <div className="text-2xl font-bold text-gray-800">{stats.unique_sub_categories}</div>
+                  <div className="text-xs text-gray-600">Sub Categories</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.unique_tags}</div>
-                  <div className="text-xs text-white/70">Unique Tags</div>
+                  <div className="text-2xl font-bold text-gray-800">{stats.unique_tags}</div>
+                  <div className="text-xs text-gray-600">Unique Tags</div>
                 </div>
               </div>
             </div>
