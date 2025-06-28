@@ -379,7 +379,7 @@ export default function CurateKnowledgePage() {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
       {/* Sidebar Navigation */}
       <SidebarNavigation currentPage="curate" stats={stats} />
 
@@ -388,8 +388,8 @@ export default function CurateKnowledgePage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Curate Knowledge</h1>
-            <p className="text-gray-600">Process and organize your knowledge with AI assistance</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Curate Knowledge</h1>
+            <p className="text-gray-700">Process and organize your knowledge with AI assistance</p>
           </div>
 
           {/* Input Mode Toggle */}
@@ -398,8 +398,8 @@ export default function CurateKnowledgePage() {
               onClick={() => setInputMode('upload')}
               className={`px-4 py-2 rounded text-sm transition-colors ${
                 inputMode === 'upload'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white/80 text-gray-700 hover:bg-white/90'
+                  ? 'bg-lime-600 text-white shadow-md'
+                  : 'bg-white text-lime-700 hover:bg-lime-50 border border-lime-200'
               }`}
             >
               📄 Upload File
@@ -408,8 +408,8 @@ export default function CurateKnowledgePage() {
               onClick={() => setInputMode('text')}
               className={`px-4 py-2 rounded text-sm transition-colors ${
                 inputMode === 'text'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white/80 text-gray-700 hover:bg-white/90'
+                  ? 'bg-lime-600 text-white shadow-md'
+                  : 'bg-white text-lime-700 hover:bg-lime-50 border border-lime-200'
               }`}
             >
               ✏️ Enter Text
@@ -418,15 +418,15 @@ export default function CurateKnowledgePage() {
 
           {/* Goal Input Section */}
           {inputMode === 'text' && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-4 border border-white/30">
-              <label className="block text-sm font-medium text-gray-800 mb-3">
+            <div className="bg-white rounded-lg p-6 mb-4 border border-lime-100 shadow-sm">
+              <label className="block text-sm font-medium text-gray-900 mb-3">
                 🎯 Learning Goal (Optional)
               </label>
               <textarea
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
                 placeholder="What's your current learning objective? e.g., 'Learn machine learning for building recommendation systems'"
-                className="w-full h-16 px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
+                className="w-full h-16 px-4 py-3 bg-white border border-lime-200 rounded-lg focus:ring-2 focus:ring-lime-400 focus:border-transparent outline-none resize-none transition-all text-gray-900 placeholder-gray-400"
                 disabled={isProcessing}
                 maxLength={500}
               />
@@ -441,19 +441,19 @@ export default function CurateKnowledgePage() {
 
           {/* Upload Area or Text Input */}
           {inputMode === 'upload' ? (
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 mb-6 border-2 border-dashed border-gray-300 text-center">
-              <div className="text-gray-500 mb-4">
+            <div className="bg-white rounded-lg p-8 mb-6 border-2 border-dashed border-lime-200 text-center shadow-sm">
+              <div className="text-lime-500 mb-4">
                 <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <div className="text-lg font-medium text-gray-800 mb-2">Drop files here or click to upload</div>
+              <div className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</div>
               <div className="text-sm text-gray-600">Supports: .txt, .md, .pdf, .docx</div>
-              <div className="mt-4 text-sm text-yellow-600">📝 File upload coming soon - use text input for now</div>
+              <div className="mt-4 text-sm text-lime-600">📝 File upload coming soon - use text input for now</div>
             </div>
           ) : (
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6 border border-white/30">
-              <label className="block text-sm font-medium text-gray-800 mb-3">
+            <div className="bg-white rounded-lg p-6 mb-6 border border-lime-100 shadow-sm">
+              <label className="block text-sm font-medium text-gray-900 mb-3">
                 💭 What did you learn today?
               </label>
               <textarea
@@ -461,7 +461,7 @@ export default function CurateKnowledgePage() {
                 onChange={e => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Share insights, discoveries, or any knowledge you want to organize..."
-                className="w-full h-40 px-4 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
+                className="w-full h-40 px-4 py-3 bg-white border border-lime-200 rounded-lg focus:ring-2 focus:ring-lime-400 focus:border-transparent outline-none resize-none transition-all text-gray-900 placeholder-gray-400"
                 disabled={isProcessing}
               />
 
@@ -477,7 +477,7 @@ export default function CurateKnowledgePage() {
                       step="0.1"
                       value={similarityThreshold}
                       onChange={e => setSimilarityThreshold(parseFloat(e.target.value))}
-                      className="w-20"
+                      className="w-20 accent-lime-600"
                     />
                     <span className="text-sm text-gray-600">{(similarityThreshold * 100).toFixed(0)}%</span>
                   </div>
@@ -485,7 +485,7 @@ export default function CurateKnowledgePage() {
                 <button
                   onClick={handleProcessText}
                   disabled={!inputText.trim() || isProcessing}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 shadow-md"
+                  className="px-6 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 shadow-md"
                 >
                   {isProcessing ? (
                     <>
@@ -525,15 +525,15 @@ export default function CurateKnowledgePage() {
 
           {/* Goal Relevance Analysis */}
           {goal && goalSummary && (
-            <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
+            <div className="bg-lime-50 rounded-lg p-4 mb-6 border border-lime-200">
               <div className="flex items-center gap-2 mb-3">
                 <span>🎯</span>
-                <h3 className="font-medium text-blue-900">Goal Relevance Analysis</h3>
+                <h3 className="font-medium text-lime-900">Goal Relevance Analysis</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-blue-800 text-sm font-medium">Relevance Score:</span>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                  <span className="text-lime-800 text-sm font-medium">Relevance Score:</span>
+                  <span className="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold">
                     {goalRelevanceScore || 'N/A'}/10
                   </span>
                   {/* Priority badge */}
@@ -548,8 +548,8 @@ export default function CurateKnowledgePage() {
                   )}
                 </div>
                 <div>
-                  <span className="text-blue-800 text-sm font-medium block mb-1">Analysis:</span>
-                  <p className="text-blue-800 text-sm leading-relaxed">{goalSummary}</p>
+                  <span className="text-lime-800 text-sm font-medium block mb-1">Analysis:</span>
+                  <p className="text-lime-800 text-sm leading-relaxed">{goalSummary}</p>
                 </div>
               </div>
             </div>
@@ -557,40 +557,40 @@ export default function CurateKnowledgePage() {
 
           {/* Recommendations Card */}
           {recommendations && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6 border border-white/30">
-              <div className="border-l-4 border-blue-400 pl-4 mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">AI Analysis & Recommendations</h2>
-                <p className="text-gray-600 text-sm">Your knowledge has been analyzed. Choose how to proceed:</p>
+            <div className="bg-white rounded-lg p-6 mb-6 border border-lime-100 shadow-sm">
+              <div className="border-l-4 border-lime-400 pl-4 mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">AI Analysis & Recommendations</h2>
+                <p className="text-gray-700 text-sm">Your knowledge has been analyzed. Choose how to proceed:</p>
               </div>
 
               {/* Context Section */}
-              <div className="mb-6 bg-white/60 rounded-lg p-4 border border-white/30">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <div className="mb-6 bg-lime-50 rounded-lg p-4 border border-lime-100">
+                <h3 className="text-sm font-semibold text-lime-700 mb-3 flex items-center gap-2">
                   📊 INPUT CONTEXT:
                 </h3>
-                <div className="text-gray-800 text-sm leading-relaxed max-h-32 overflow-y-auto">
+                <div className="text-gray-900 text-sm leading-relaxed max-h-32 overflow-y-auto">
                   {inputText}
                 </div>
               </div>
 
               {/* Enhanced Similar Category Info */}
               {similarMainCategory && (
-                <div className="mb-6 p-4 bg-blue-50/80 rounded-lg border border-blue-200/50">
-                  <h3 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                <div className="mb-6 p-4 bg-lime-50 rounded-lg border border-lime-200">
+                  <h3 className="text-sm font-semibold text-lime-800 mb-3 flex items-center gap-2">
                     🔍 SIMILAR CONTENT DETECTED:
                   </h3>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-blue-700 text-sm">
+                      <div className="text-lime-700 text-sm">
                         <div className="mb-1">
                           <span className="font-medium">Category:</span> 
-                          <span className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs text-blue-800">
+                          <span className="ml-2 bg-lime-100 px-2 py-1 rounded text-xs text-lime-800">
                             {similarMainCategory}
                           </span>
                           {similarSubCategory && (
                             <>
                               <span className="mx-2">→</span>
-                              <span className="bg-purple-100 px-2 py-1 rounded text-xs text-purple-800">
+                              <span className="bg-green-100 px-2 py-1 rounded text-xs text-green-800">
                                 {similarSubCategory}
                               </span>
                             </>
@@ -606,10 +606,9 @@ export default function CurateKnowledgePage() {
                         )}
                       </div>
                     </div>
-                    
                     {/* Similarity Warning */}
                     {similarityScore >= 0.8 && (
-                      <div className="mt-3 p-3 bg-yellow-50/80 border border-yellow-200/50 rounded-lg">
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <div className="flex items-center gap-2 text-yellow-800">
                           <span>⚠️</span>
                           <span className="text-sm font-medium">
@@ -624,25 +623,21 @@ export default function CurateKnowledgePage() {
 
               {/* AI Recommendations */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-lime-700 mb-4 flex items-center gap-2">
                   💡 AI RECOMMENDATIONS:
                 </h3>
                 <div className="space-y-4">
                   {recommendations.map(rec => (
                     <div
                       key={rec.option_number}
-                      className="bg-white/60 border border-white/30 rounded-lg p-4 hover:bg-white/80 transition-colors"
+                      className="bg-lime-50 border border-lime-100 rounded-lg p-4 hover:bg-lime-100 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           {/* Option Header */}
                           <div className="mb-3">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                                rec.option_number === 1 || rec.option_number === 2 
-                                  ? 'bg-violet-500 text-white' 
-                                  : 'bg-blue-500 text-white'
-                              }`}>
+                              <span className={`px-2 py-1 rounded text-xs font-semibold bg-lime-600 text-white`}>
                                 Option {rec.option_number}
                               </span>
                               {/* Goal-oriented badge for options 1 and 2 */}
@@ -651,16 +646,11 @@ export default function CurateKnowledgePage() {
                                   GOAL-ORIENTED
                                 </span>
                               )}
-                              {/* Removed Goal-Aware, Priority, and Relevance badges from here */}
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                rec.action_type === 'create_new' ? 'bg-green-100 text-green-800' :
-                                rec.action_type === 'merge' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
+                              <span className={`text-xs px-2 py-1 rounded bg-green-100 text-green-800`}>
                                 {rec.action_type?.replace('_', ' ').toUpperCase()}
                               </span>
                             </div>
-                            <div className="text-gray-800 font-medium">
+                            <div className="text-gray-900 font-medium">
                               {rec.main_category} → {rec.sub_category}
                             </div>
                             <div className="text-gray-600 text-sm mt-1">
@@ -670,7 +660,7 @@ export default function CurateKnowledgePage() {
 
                           {/* Content Preview */}
                           <div className="mb-3">
-                            <div className="bg-white/80 rounded p-3 text-sm text-gray-700 max-h-24 overflow-y-auto">
+                            <div className="bg-white rounded p-3 text-sm text-gray-900 max-h-24 overflow-y-auto">
                               {rec.preview ? (
                                 rec.preview
                               ) : (
@@ -688,13 +678,13 @@ export default function CurateKnowledgePage() {
                               {rec.tags.slice(0, 3).map((tag, index) => ( // Only show first 3 tags
                                 <span
                                   key={index}
-                                  className="bg-blue-100/80 text-blue-800 px-2 py-1 rounded text-xs border border-blue-200/50"
+                                  className="bg-lime-100 text-lime-800 px-2 py-1 rounded text-xs border border-lime-200"
                                 >
                                   {tag}
                                 </span>
                               ))}
                               {rec.tags.length > 3 && (
-                                <span className="text-blue-600 text-xs px-2 py-1">
+                                <span className="text-lime-600 text-xs px-2 py-1">
                                   +{rec.tags.length - 3} more
                                 </span>
                               )}
@@ -706,7 +696,7 @@ export default function CurateKnowledgePage() {
                         <button
                           onClick={() => handleApplyRecommendation(rec)}
                           disabled={isApplying || isProcessing}
-                          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+                          className="bg-lime-600 hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
                         >
                           {isApplying ? (
                             <>
@@ -727,11 +717,11 @@ export default function CurateKnowledgePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4 border-t border-white/30">
+              <div className="flex gap-4 pt-4 border-t border-lime-100">
                 <button
                   onClick={handleDoNothing}
                   disabled={isApplying || isProcessing}
-                  className="px-6 py-2 bg-white/60 text-gray-700 rounded hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/30"
+                  className="px-6 py-2 bg-white text-lime-700 rounded hover:bg-lime-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-lime-200"
                 >
                   🗑️ Discard Input
                 </button>
@@ -741,22 +731,22 @@ export default function CurateKnowledgePage() {
 
           {/* Bottom Stats */}
           {stats && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/30">
+            <div className="bg-white rounded-lg p-4 border border-lime-100 shadow-sm">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-gray-800">{stats.total_knowledge_items}</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.total_knowledge_items}</div>
                   <div className="text-xs text-gray-600">Total Items</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-800">{stats.unique_main_categories}</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.unique_main_categories}</div>
                   <div className="text-xs text-gray-600">Main Categories</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-800">{stats.unique_sub_categories}</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.unique_sub_categories}</div>
                   <div className="text-xs text-gray-600">Sub Categories</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-800">{stats.unique_tags}</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.unique_tags}</div>
                   <div className="text-xs text-gray-600">Unique Tags</div>
                 </div>
               </div>
