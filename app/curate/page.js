@@ -426,7 +426,7 @@ export default function CurateKnowledgePage() {
       }
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/parse-upload', {
+      const res = await fetch('/api/parse-file', {
         method: 'POST',
         body: formData,
       });

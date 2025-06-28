@@ -1,35 +1,28 @@
 import { NextResponse } from 'next/server';
-import pdfParse from 'pdf-parse';
-import mammoth from 'mammoth';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 export async function POST(req) {
-  const formData = await req.formData();
-  const file = formData.get('file');
-  if (!file) {
-    return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-  }
-
-  const ext = file.name.split('.').pop().toLowerCase();
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
   try {
+    const formData = await req.formData();
+    const file = formData.get('file');
+    if (!file) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
     let text = '';
     if (ext === 'txt' || ext === 'md') {
-      text = buffer.toString('utf8');
-    } else if (ext === 'pdf') {
-      const data = await pdfParse(buffer);
-      text = data.text;
-    } else if (ext === 'docx') {
-      const result = await mammoth.extractRawText({ buffer });
-      text = result.value;
+      text = new TextDecoder('utf-8').decode(buffer);
     } else {
-      throw new Error('Unsupported file type');
+      return NextResponse.json({ error: 'Only .txt and .md parsing supported. PDF/DOCX support coming soon.' }, { status: 400 });
     }
+
     return NextResponse.json({ text });
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
 } 
