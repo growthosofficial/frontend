@@ -173,13 +173,6 @@ const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
             </div>
           </div>
         </div>
-
-        {/* Expanded count badge */}
-        <div className="absolute top-4 right-16">
-          <div className="bg-lime-400 text-white px-3 py-1 rounded-full text-lg font-bold min-w-[3rem] text-center shadow">
-            {totalItems}
-          </div>
-        </div>
       </div>
 
       {/* Expanded Content */}
