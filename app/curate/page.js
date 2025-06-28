@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { processText } from '../../lib/api';
 import { knowledgeAPI } from '../../lib/supabase';
 import SidebarNavigation from '../../components/SidebarNavigation';
@@ -22,6 +22,15 @@ export default function CurateKnowledgePage() {
   const [inputMode, setInputMode] = useState('text'); // Default to text mode
   const [similarityThreshold, setSimilarityThreshold] = useState(0.8);
   const [isApplying, setIsApplying] = useState(false);
+  const [showGoalDropdown, setShowGoalDropdown] = useState(false);
+  const goalInputRef = useRef(null);
+  const placeholderGoals = [
+    'Learn machine learning for building recommendation systems',
+    'Master React for frontend development'
+  ];
+  const fileInputRef = useRef(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState('');
 
   // Load categories and stats on component mount
   useEffect(() => {
@@ -378,6 +387,62 @@ export default function CurateKnowledgePage() {
     return { label: 'Very Low', color: 'text-gray-600 bg-gray-100' };
   };
 
+  // File upload handler
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await uploadAndParseFile(file);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFileError('');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    await uploadAndParseFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const uploadAndParseFile = async (file) => {
+    setFileLoading(true);
+    setFileError('');
+    try {
+      const allowed = ['text/plain', 'text/markdown'];
+      const allowedExt = ['txt', 'md'];
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!allowed.includes(file.type) && !allowedExt.includes(ext)) {
+        if (ext === 'pdf' || ext === 'docx') {
+          setFileError('PDF and DOCX support will be implemented in the future. Please upload a .txt or .md file.');
+        } else {
+          setFileError('Unsupported file type. Please upload a .txt or .md file.');
+        }
+        setFileLoading(false);
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/parse-upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFileError(data.error || 'Failed to parse file.');
+      } else {
+        setInputText(data.text || '');
+      }
+    } catch (err) {
+      setFileError('Failed to upload or parse file.');
+    } finally {
+      setFileLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
       {/* Sidebar Navigation */}
@@ -422,34 +487,79 @@ export default function CurateKnowledgePage() {
               <label className="block text-sm font-medium text-gray-900 mb-3">
                 🎯 Learning Goal (Optional)
               </label>
-              <textarea
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                placeholder="What's your current learning objective? e.g., 'Learn machine learning for building recommendation systems'"
-                className="w-full h-16 px-4 py-3 bg-white border border-lime-200 rounded-lg focus:ring-2 focus:ring-lime-400 focus:border-transparent outline-none resize-none transition-all text-gray-900 placeholder-gray-400"
-                disabled={isProcessing}
-                maxLength={500}
-              />
+              <div className="flex items-center gap-2 relative">
+                <input
+                  ref={goalInputRef}
+                  type="text"
+                  value={goal}
+                  onChange={e => setGoal(e.target.value)}
+                  placeholder="Type your learning goal or select from the list..."
+                  className="flex-1 px-4 py-2 bg-white border border-lime-200 rounded-lg focus:ring-2 focus:ring-lime-400 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400"
+                  disabled={isProcessing}
+                  maxLength={120}
+                />
+                <button
+                  type="button"
+                  className="px-3 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition-colors text-sm font-medium shadow"
+                  onClick={() => setShowGoalDropdown(v => !v)}
+                  tabIndex={-1}
+                >
+                  ▼
+                </button>
+                {showGoalDropdown && (
+                  <div className="absolute right-0 top-12 z-10 bg-white border border-lime-200 rounded-lg shadow-lg w-80 min-w-max">
+                    {placeholderGoals.map((g, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="block w-full text-left px-4 py-2 hover:bg-lime-50 text-gray-900 text-sm"
+                        onClick={() => {
+                          setGoal(g);
+                          setShowGoalDropdown(false);
+                          if (goalInputRef.current) goalInputRef.current.focus();
+                        }}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-600">
                   Providing a goal helps AI prioritize and assess relevance of knowledge
                 </p>
-                <span className="text-xs text-gray-500">{goal.length}/500</span>
+                <span className="text-xs text-gray-500">{goal.length}/120</span>
               </div>
             </div>
           )}
 
           {/* Upload Area or Text Input */}
           {inputMode === 'upload' ? (
-            <div className="bg-white rounded-lg p-8 mb-6 border-2 border-dashed border-lime-200 text-center shadow-sm">
+            <div
+              className={`bg-white rounded-lg p-8 mb-6 border-2 border-dashed border-lime-200 text-center shadow-sm transition-colors ${fileLoading ? 'opacity-60' : ''}`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              style={{ cursor: fileLoading ? 'not-allowed' : 'pointer' }}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,.md"
+                className="hidden"
+                onChange={handleFileChange}
+                disabled={fileLoading}
+              />
               <div className="text-lime-500 mb-4">
                 <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               <div className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</div>
-              <div className="text-sm text-gray-600">Supports: .txt, .md, .pdf, .docx</div>
-              <div className="mt-4 text-sm text-lime-600">📝 File upload coming soon - use text input for now</div>
+              <div className="text-sm text-gray-600">Supports: .txt, .md</div>
+              {fileLoading && <div className="mt-4 text-lime-600">Parsing file...</div>}
+              {fileError && <div className="mt-4 text-red-600">{fileError}</div>}
             </div>
           ) : (
             <div className="bg-white rounded-lg p-6 mb-6 border border-lime-100 shadow-sm">

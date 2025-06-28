@@ -53,9 +53,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-white via-lime-50 to-green-100 flex items-center justify-center p-4">
       {/* Background pattern */}
-      <div className="absolute inset-0 opacity-10">
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
@@ -72,29 +72,29 @@ export default function LoginPage() {
             <div className="flex gap-1">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-lime-500 rounded-full"></div>
             </div>
-            <Brain size={32} className="text-blue-400" />
+            <Brain size={32} className="text-lime-500" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">GrowthOS</h1>
-          <p className="text-gray-400">Your Second Brain for Knowledge Management</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">GrowthOS</h1>
+          <p className="text-gray-600">Your Second Brain for Knowledge Management</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-gray-800 backdrop-blur-lg rounded-lg shadow-2xl p-8 border border-gray-700">
+        <div className="bg-white rounded-lg shadow-2xl p-8 border border-lime-100">
           <form id="login-form" onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Email Address</label>
               <div className="relative">
                 <User
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lime-400"
                   size={20}
                 />
                 <input
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-lime-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all"
                   placeholder="Enter your email"
                   disabled={isLoading}
                 />
@@ -102,17 +102,17 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Password</label>
               <div className="relative">
                 <Lock
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lime-400"
                   size={20}
                 />
                 <input
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-lime-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all"
                   placeholder="Enter your password"
                   disabled={isLoading}
                 />
@@ -120,15 +120,15 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-3">
-                <p className="text-red-400 text-sm">❌ {error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm">❌ {error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group"
+              className="w-full bg-lime-600 hover:bg-lime-700 disabled:bg-lime-800 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 group shadow"
             >
               {isLoading ? (
                 <>
@@ -148,13 +148,13 @@ export default function LoginPage() {
           </form>
 
           {/* Demo Login */}
-          <div className="mt-6 pt-6 border-t border-gray-700">
+          <div className="mt-6 pt-6 border-t border-lime-100">
             <button
               onClick={handleDemoLogin}
               disabled={isLoading}
-              className="w-full bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed text-gray-300 font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full bg-lime-100 hover:bg-lime-200 disabled:bg-lime-200 disabled:cursor-not-allowed text-lime-700 font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
             >
-              <Brain size={20} className="text-blue-400" />
+              <Brain size={20} className="text-lime-500" />
               Try Demo Account
             </button>
             <p className="text-xs text-gray-500 text-center mt-2">
@@ -164,9 +164,9 @@ export default function LoginPage() {
 
           {/* Additional Options */}
           <div className="mt-6 text-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-600 text-sm">
               "Don&apos;t have an account?"{' '}
-              <button className="text-blue-400 hover:text-blue-300 transition-colors">
+              <button className="text-lime-600 hover:text-lime-700 transition-colors">
                 Sign up
               </button>
             </p>
@@ -175,8 +175,8 @@ export default function LoginPage() {
 
         {/* Features Preview */}
         <div className="mt-8 text-center">
-          <p className="text-gray-400 text-sm mb-4">"What you&apos;ll get access to:"</p>
-          <div className="flex justify-center gap-6 text-xs text-gray-500">
+          <p className="text-gray-600 text-sm mb-4">"What you&apos;ll get access to:"</p>
+          <div className="flex justify-center gap-6 text-xs text-gray-700">
             <div className="flex items-center gap-1">
               <span>🔧</span>
               <span>Curate Knowledge</span>

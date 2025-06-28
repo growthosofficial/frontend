@@ -21,7 +21,10 @@
     "react-dom": "^18.3.1",
     "react-markdown": "^8.0.7",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "formidable": "^2.1.1",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.7.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
