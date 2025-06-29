@@ -42,7 +42,7 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
           active: currentPage === "curate"
         },
         {
-          href: "/test",
+          href: "/selfTest",
           icon: <Pencil size={16} />,
           label: "Self Test",
           active: currentPage === "test"
@@ -77,7 +77,7 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
     <aside
       className={`
         relative flex flex-col transition-all duration-300
-        h-screen p-3 rounded-2xl
+        h-screen p-3
         ${isExpanded ? "w-64" : "w-16"}
         bg-white/30 backdrop-blur-md shadow-xl
       `}

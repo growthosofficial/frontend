@@ -423,7 +423,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 p-4">
+    <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 p-4 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white/90 rounded-2xl p-4 mb-6 text-center">

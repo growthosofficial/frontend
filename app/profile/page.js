@@ -153,7 +153,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
+      <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
       </div>
     )
@@ -161,7 +161,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
+      <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
         <div className="text-white text-xl">
           No profile found. Please complete onboarding first.
         </div>
@@ -170,15 +170,37 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
-      <SidebarNavigation currentPage="profile" />
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-6">
-          {/* Header */}
-          <div className="bg-white/90 rounded-2xl p-4 mb-6 text-center">
-            <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-              <span>😊</span> User Profile
-            </h1>
+    <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 p-4 overflow-y-auto">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-white/90 rounded-2xl p-4 mb-6 text-center">
+          <h1 className="text-xl font-bold flex items-center justify-center gap-2">
+            <span>😊</span> User Profile
+          </h1>
+        </div>
+
+        {/* Profile Content */}
+        <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
+          {/* Avatar Section */}
+          <div className="text-center mb-8">
+            <div className="relative inline-block">
+              <Avatar className="w-32 h-32 mx-auto bg-white/20">
+                <AvatarImage src={profile.avatar_url || '/placeholder.svg'} />
+                <AvatarFallback className="bg-white/20 text-white text-2xl">
+                  {profile.name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <label className="absolute bottom-0 right-0 bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg p-2 rounded-full cursor-pointer">
+                <Upload className="w-4 h-4" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <p className="text-white/80 mt-2">Change profile picture</p>
           </div>
 
           {/* Profile Content */}
