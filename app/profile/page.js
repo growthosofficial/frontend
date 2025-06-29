@@ -152,7 +152,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
+      <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
       </div>
     )
@@ -160,7 +160,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
+      <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
         <div className="text-white text-xl">
           No profile found. Please complete onboarding first.
         </div>
@@ -169,7 +169,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 p-4">
+    <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 p-4 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white/90 rounded-2xl p-4 mb-6 text-center">
