@@ -21,7 +21,7 @@ export default function CurateKnowledgePage() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [inputMode, setInputMode] = useState('text'); // Default to text mode
-  const [similarityThreshold, setSimilarityThreshold] = useState(0.8);
+  const [similarityThreshold, setSimilarityThreshold] = useState(0.2);
   const [isApplying, setIsApplying] = useState(false);
   const [showGoalDropdown, setShowGoalDropdown] = useState(false);
   const [userGoals, setUserGoals] = useState([]); // New state for user goals
@@ -277,6 +277,24 @@ export default function CurateKnowledgePage() {
         throw new Error('Recommendation missing instructions');
       }
 
+      // Retrieve actual content of similar knowledge if available
+      let similarKnowledgeContent = null;
+      if (similarMainCategory && similarSubCategory) {
+        try {
+          console.log('🔍 Retrieving similar knowledge content from database...');
+          const similarKnowledge = await knowledgeAPI.getByCategory(similarMainCategory, similarSubCategory);
+          if (similarKnowledge) {
+            similarKnowledgeContent = similarKnowledge.content;
+            console.log(`✅ Retrieved similar knowledge content: ${similarKnowledgeContent.length} characters`);
+          } else {
+            console.log('⚠️ No similar knowledge content found in database');
+          }
+        } catch (error) {
+          console.error('❌ Failed to retrieve similar knowledge content:', error);
+          // Continue without similar knowledge content
+        }
+      }
+
       // Call Phase 2 LLM processing
       console.log('🔄 Calling Phase 2 LLM processing...');
       const phase2Response = await fetch('/api/knowledge-generate', {
@@ -288,7 +306,7 @@ export default function CurateKnowledgePage() {
           action_type: recommendation.action_type,
           input_text: inputText,
           instructions: recommendation.instructions,
-          similar_knowledge: similarMainCategory ? `${similarMainCategory} → ${similarSubCategory}` : null,
+          similar_knowledge: similarKnowledgeContent || null,
           main_category: recommendation.main_category,
           sub_category: recommendation.sub_category,
           tags: recommendation.tags || []
@@ -681,7 +699,7 @@ export default function CurateKnowledgePage() {
                     <label className="text-sm text-gray-600">Similarity threshold:</label>
                     <input
                       type="range"
-                      min="0.5"
+                      min="0"
                       max="1.0"
                       step="0.1"
                       value={similarityThreshold}

@@ -160,7 +160,7 @@ export default function ProfilePage() {
   return (
     <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex">
       {/* Sidebar Navigation */}
-      <SidebarNavigation />
+      <SidebarNavigation currentPage="profile" />
       
       {/* Main Content */}
       <div className="flex-1 p-4 overflow-y-auto">
