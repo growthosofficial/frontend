@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { processText } from '../../lib/api';
 import { knowledgeAPI } from '../../lib/supabase';
 import SidebarNavigation from '../../components/SidebarNavigation';
@@ -14,6 +14,7 @@ export default function CurateKnowledgePage() {
   const [similarSubCategory, setSimilarSubCategory] = useState(null);
   const [similarityScore, setSimilarityScore] = useState(null);
   const [goalSummary, setGoalSummary] = useState(null); // New goal summary state
+  const [goalRelevanceScore, setGoalRelevanceScore] = useState(null); // New goal relevance score state
   const [stats, setStats] = useState(null);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
@@ -21,6 +22,15 @@ export default function CurateKnowledgePage() {
   const [inputMode, setInputMode] = useState('text'); // Default to text mode
   const [similarityThreshold, setSimilarityThreshold] = useState(0.8);
   const [isApplying, setIsApplying] = useState(false);
+  const [showGoalDropdown, setShowGoalDropdown] = useState(false);
+  const goalInputRef = useRef(null);
+  const placeholderGoals = [
+    'Learn machine learning for building recommendation systems',
+    'Master React for frontend development'
+  ];
+  const fileInputRef = useRef(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState('');
 
   // Load categories and stats on component mount
   useEffect(() => {
@@ -103,31 +113,80 @@ export default function CurateKnowledgePage() {
     setSuccessMessage('');
     setRecommendations(null);
     setGoalSummary(null);
+    setGoalRelevanceScore(null);
 
     try {
-      console.log('🚀 Processing text with backend...');
+      console.log('🚀 Starting parallel processing...');
       console.log('🎯 Goal provided:', !!goal);
       
-      // Call backend for AI processing and recommendations with goal
-      const result = await processText(inputText, similarityThreshold, goal.trim() || null);
-      console.log('✅ Backend response:', result);
-      
-      // Handle the response structure
-      if (result.status === 'success' && result.recommendations) {
-        setRecommendations(result.recommendations);
-        setSimilarMainCategory(result.similar_main_category);
-        setSimilarSubCategory(result.similar_sub_category);
-        setSimilarityScore(result.similarity_score);
-        setGoalSummary(result.goal_summary); // Set goal summary
+      // 🚀 RUN BOTH APIs IN TRUE PARALLEL
+      const [backendResult, previewResult] = await Promise.all([
+        // Backend processing
+        processText(inputText, similarityThreshold, goal.trim() || null)
+          .catch(error => {
+            console.error('❌ Backend processing failed:', error);
+            throw new Error(`Backend processing failed: ${error.message}`);
+          }),
         
-        console.log(`📊 Found ${result.recommendations.length} recommendations`);
+        // Preview generation
+        fetch('/api/generate-preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input_text: inputText }),
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Preview API returned ${response.status}`);
+          }
+          return response.json();
+        })
+        .catch(error => {
+          console.error('❌ Preview generation failed:', error);
+          // Don't throw here, just return a fallback preview
+          return { preview: 'Preview generation failed - processing continues...' };
+        })
+      ]);
+      
+      console.log('✅ Backend response:', backendResult);
+      console.log('✅ Preview result:', previewResult);
+      
+      // Handle the backend response structure
+      if (backendResult.status === 'success' && backendResult.recommendations) {
+        // Map the new response structure to what the frontend expects
+        const mappedRecommendations = backendResult.recommendations.map(rec => ({
+          ...rec,
+          // Add computed fields that the frontend expects
+          updated_text: rec.instructions || '',
+          preview: previewResult.preview || 'No preview available',
+          is_goal_aware: backendResult.goal_provided && backendResult.goal_relevance_score !== null,
+          relevance_score: backendResult.goal_relevance_score,
+          goal_alignment: backendResult.goal_relevance_explanation,
+          goal_priority: rec.goal_priority || 'medium',
+          // Ensure all required fields are present
+          option_number: rec.option_number || 0,
+          change: rec.change || '',
+          instructions: rec.instructions || '',
+          main_category: rec.main_category || 'General Studies',
+          sub_category: rec.sub_category || 'General',
+          tags: rec.tags || [],
+          action_type: rec.action_type || 'create_new'
+        }));
+        
+        setRecommendations(mappedRecommendations);
+        setSimilarMainCategory(backendResult.similar_main_category);
+        setSimilarSubCategory(backendResult.similar_sub_category);
+        setSimilarityScore(backendResult.similarity_score);
+        setGoalSummary(backendResult.goal_relevance_explanation);
+        setGoalRelevanceScore(backendResult.goal_relevance_score);
+        
+        console.log(`📊 Found ${backendResult.recommendations.length} recommendations with previews`);
         
         // Log goal-aware recommendations
-        const goalAwareCount = result.recommendations.filter(r => r.is_goal_aware).length;
-        console.log(`🎯 Goal-aware recommendations: ${goalAwareCount}/${result.recommendations.length}`);
+        const goalAwareCount = backendResult.goal_provided ? backendResult.recommendations.length : 0;
+        console.log(`🎯 Goal-aware recommendations: ${goalAwareCount}/${backendResult.recommendations.length}`);
         
-        if (result.similar_main_category) {
-          console.log(`🔍 Similar content found: ${result.similar_main_category} → ${result.similar_sub_category} (${(result.similarity_score * 100).toFixed(1)}% similarity)`);
+        if (backendResult.similar_main_category) {
+          console.log(`🔍 Similar content found: ${backendResult.similar_main_category} → ${backendResult.similar_sub_category} (${(backendResult.similarity_score * 100).toFixed(1)}% similarity)`);
         }
       } else {
         throw new Error('Invalid response format from backend');
@@ -147,7 +206,7 @@ export default function CurateKnowledgePage() {
     try {
       console.log('🚀 Applying recommendation:', recommendation);
       console.log(`📂 Category: ${recommendation.main_category} → ${recommendation.sub_category}`);
-      console.log('📝 Content length:', recommendation.updated_text?.length || 0);
+      console.log('📝 Instructions length:', recommendation.instructions?.length || 0);
       console.log('🏷️ Tags:', recommendation.tags);
 
       // Validate recommendation data
@@ -155,9 +214,35 @@ export default function CurateKnowledgePage() {
         throw new Error('Recommendation missing required category information');
       }
 
-      if (!recommendation.updated_text) {
-        throw new Error('Recommendation missing content');
+      if (!recommendation.instructions) {
+        throw new Error('Recommendation missing instructions');
       }
+
+      // Call Phase 2 LLM processing
+      console.log('🔄 Calling Phase 2 LLM processing...');
+      const phase2Response = await fetch('/api/knowledge-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action_type: recommendation.action_type,
+          input_text: inputText,
+          instructions: recommendation.instructions,
+          similar_knowledge: similarMainCategory ? `${similarMainCategory} → ${similarSubCategory}` : null,
+          main_category: recommendation.main_category,
+          sub_category: recommendation.sub_category,
+          tags: recommendation.tags || []
+        }),
+      });
+
+      if (!phase2Response.ok) {
+        const errorData = await phase2Response.json();
+        throw new Error(errorData.error || `Phase 2 processing failed: ${phase2Response.status}`);
+      }
+
+      const phase2Result = await phase2Response.json();
+      console.log('✅ Phase 2 processing completed:', phase2Result);
 
       // Ensure tags is an array
       let tags = [];
@@ -169,23 +254,24 @@ export default function CurateKnowledgePage() {
         tags = ['knowledge'];
       }
 
-      // Create knowledge item using new schema with enhanced metadata
+      // Create knowledge item using the processed text and embedding from Phase 2
       const knowledgeItem = {
         main_category: recommendation.main_category,
         sub_category: recommendation.sub_category,
-        content: recommendation.updated_text,
+        content: phase2Result.processed_text,
         tags: tags,
         source: 'text',
+        embedding: phase2Result.embedding,
         // Add goal-related metadata if available
         metadata: {
           action_type: recommendation.action_type,
-          reasoning: recommendation.reasoning,
-          semantic_coherence: recommendation.semantic_coherence,
-          ...(recommendation.is_goal_aware && {
+          instructions: recommendation.instructions,
+          change_description: recommendation.change,
+          phase2_processed: true,
+          ...(goal && {
             goal_aware: true,
             relevance_score: recommendation.relevance_score,
             goal_alignment: recommendation.goal_alignment,
-            goal_priority: recommendation.goal_priority,
             original_goal: goal
           })
         }
@@ -215,7 +301,7 @@ export default function CurateKnowledgePage() {
       }
       
       // Add goal relevance info to success message if available
-      if (recommendation.is_goal_aware && recommendation.relevance_score && goal) {
+      if (goal && recommendation.relevance_score) {
         successMessage += ` (Goal relevance: ${recommendation.relevance_score}/10)`;
       }
       
@@ -241,6 +327,7 @@ export default function CurateKnowledgePage() {
       setSimilarSubCategory(null);
       setSimilarityScore(null);
       setGoalSummary(null);
+      setGoalRelevanceScore(null); // Clear goal relevance score
       setInputText('');
       setGoal(''); // Clear goal too
 
@@ -272,6 +359,7 @@ export default function CurateKnowledgePage() {
     setSimilarSubCategory(null);
     setSimilarityScore(null);
     setGoalSummary(null); // Clear goal summary
+    setGoalRelevanceScore(null); // Clear goal relevance score
     setInputText('');
     setGoal(''); // Clear goal
     setError(null);
@@ -299,8 +387,64 @@ export default function CurateKnowledgePage() {
     return { label: 'Very Low', color: 'text-gray-600 bg-gray-100' };
   };
 
+  // File upload handler
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await uploadAndParseFile(file);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFileError('');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    await uploadAndParseFile(file);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const uploadAndParseFile = async (file) => {
+    setFileLoading(true);
+    setFileError('');
+    try {
+      const allowed = ['text/plain', 'text/markdown'];
+      const allowedExt = ['txt', 'md'];
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!allowed.includes(file.type) && !allowedExt.includes(ext)) {
+        if (ext === 'pdf' || ext === 'docx') {
+          setFileError('PDF and DOCX support will be implemented in the future. Please upload a .txt or .md file.');
+        } else {
+          setFileError('Unsupported file type. Please upload a .txt or .md file.');
+        }
+        setFileLoading(false);
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/parse-file', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFileError(data.error || 'Failed to parse file.');
+      } else {
+        setInputText(data.text || '');
+      }
+    } catch (err) {
+      setFileError('Failed to upload or parse file.');
+    } finally {
+      setFileLoading(false);
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-600 via-navy-600 to-white">
+    <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
       {/* Sidebar Navigation */}
       <SidebarNavigation currentPage="curate" stats={stats} />
 
@@ -309,8 +453,8 @@ export default function CurateKnowledgePage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-white mb-2">Curate Knowledge</h1>
-            <p className="text-blue-100">Process and organize your knowledge with AI assistance</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Curate Knowledge</h1>
+            <p className="text-gray-700">Process and organize your knowledge with AI assistance</p>
           </div>
 
           {/* Input Mode Toggle */}
@@ -319,8 +463,8 @@ export default function CurateKnowledgePage() {
               onClick={() => setInputMode('upload')}
               className={`px-4 py-2 rounded text-sm transition-colors ${
                 inputMode === 'upload'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-lime-600 text-white shadow-md'
+                  : 'bg-white text-lime-700 hover:bg-lime-50 border border-lime-200'
               }`}
             >
               📄 Upload File
@@ -329,8 +473,8 @@ export default function CurateKnowledgePage() {
               onClick={() => setInputMode('text')}
               className={`px-4 py-2 rounded text-sm transition-colors ${
                 inputMode === 'text'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-lime-600 text-white shadow-md'
+                  : 'bg-white text-lime-700 hover:bg-lime-50 border border-lime-200'
               }`}
             >
               ✏️ Enter Text
@@ -339,42 +483,87 @@ export default function CurateKnowledgePage() {
 
           {/* Goal Input Section */}
           {inputMode === 'text' && (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-4">
-              <label className="block text-sm font-medium text-white mb-3">
+            <div className="bg-white rounded-lg p-6 mb-4 border border-lime-100 shadow-sm">
+              <label className="block text-sm font-medium text-gray-900 mb-3">
                 🎯 Learning Goal (Optional)
               </label>
-              <textarea
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                placeholder="What's your current learning objective? e.g., 'Learn machine learning for building recommendation systems'"
-                className="w-full h-16 px-4 py-3 bg-white/90 border border-white/30 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
-                disabled={isProcessing}
-                maxLength={500}
-              />
+              <div className="flex items-center gap-2 relative">
+                <input
+                  ref={goalInputRef}
+                  type="text"
+                  value={goal}
+                  onChange={e => setGoal(e.target.value)}
+                  placeholder="Type your learning goal or select from the list..."
+                  className="flex-1 px-4 py-2 bg-white border border-lime-200 rounded-lg focus:ring-2 focus:ring-lime-400 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400"
+                  disabled={isProcessing}
+                  maxLength={120}
+                />
+                <button
+                  type="button"
+                  className="px-3 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition-colors text-sm font-medium shadow"
+                  onClick={() => setShowGoalDropdown(v => !v)}
+                  tabIndex={-1}
+                >
+                  ▼
+                </button>
+                {showGoalDropdown && (
+                  <div className="absolute right-0 top-12 z-10 bg-white border border-lime-200 rounded-lg shadow-lg w-80 min-w-max">
+                    {placeholderGoals.map((g, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="block w-full text-left px-4 py-2 hover:bg-lime-50 text-gray-900 text-sm"
+                        onClick={() => {
+                          setGoal(g);
+                          setShowGoalDropdown(false);
+                          if (goalInputRef.current) goalInputRef.current.focus();
+                        }}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex justify-between items-center mt-2">
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-gray-600">
                   Providing a goal helps AI prioritize and assess relevance of knowledge
                 </p>
-                <span className="text-xs text-white/50">{goal.length}/500</span>
+                <span className="text-xs text-gray-500">{goal.length}/120</span>
               </div>
             </div>
           )}
 
           {/* Upload Area or Text Input */}
           {inputMode === 'upload' ? (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-8 mb-6 border-2 border-dashed border-white/30 text-center">
-              <div className="text-white/70 mb-4">
+            <div
+              className={`bg-white rounded-lg p-8 mb-6 border-2 border-dashed border-lime-200 text-center shadow-sm transition-colors ${fileLoading ? 'opacity-60' : ''}`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              style={{ cursor: fileLoading ? 'not-allowed' : 'pointer' }}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,.md"
+                className="hidden"
+                onChange={handleFileChange}
+                disabled={fileLoading}
+              />
+              <div className="text-lime-500 mb-4">
                 <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <div className="text-lg font-medium text-white mb-2">Drop files here or click to upload</div>
-              <div className="text-sm text-white/70">Supports: .txt, .md, .pdf, .docx</div>
-              <div className="mt-4 text-sm text-yellow-200">📝 File upload coming soon - use text input for now</div>
+              <div className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</div>
+              <div className="text-sm text-gray-600">Supports: .txt, .md</div>
+              {fileLoading && <div className="mt-4 text-lime-600">Parsing file...</div>}
+              {fileError && <div className="mt-4 text-red-600">{fileError}</div>}
             </div>
           ) : (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6">
-              <label className="block text-sm font-medium text-white mb-3">
+            <div className="bg-white rounded-lg p-6 mb-6 border border-lime-100 shadow-sm">
+              <label className="block text-sm font-medium text-gray-900 mb-3">
                 💭 What did you learn today?
               </label>
               <textarea
@@ -382,15 +571,15 @@ export default function CurateKnowledgePage() {
                 onChange={e => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Share insights, discoveries, or any knowledge you want to organize..."
-                className="w-full h-40 px-4 py-3 bg-white/90 border border-white/30 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent outline-none resize-none transition-all text-gray-800 placeholder-gray-500"
+                className="w-full h-40 px-4 py-3 bg-white border border-lime-200 rounded-lg focus:ring-2 focus:ring-lime-400 focus:border-transparent outline-none resize-none transition-all text-gray-900 placeholder-gray-400"
                 disabled={isProcessing}
               />
 
               <div className="flex justify-between items-center mt-4">
                 <div className="flex items-center gap-4">
-                  <div className="text-sm text-white/70">{inputText.length} characters</div>
+                  <div className="text-sm text-gray-600">{inputText.length} characters</div>
                   <div className="flex items-center gap-2">
-                    <label className="text-sm text-white/70">Similarity threshold:</label>
+                    <label className="text-sm text-gray-600">Similarity threshold:</label>
                     <input
                       type="range"
                       min="0.5"
@@ -398,15 +587,15 @@ export default function CurateKnowledgePage() {
                       step="0.1"
                       value={similarityThreshold}
                       onChange={e => setSimilarityThreshold(parseFloat(e.target.value))}
-                      className="w-20"
+                      className="w-20 accent-lime-600"
                     />
-                    <span className="text-sm text-white/70">{(similarityThreshold * 100).toFixed(0)}%</span>
+                    <span className="text-sm text-gray-600">{(similarityThreshold * 100).toFixed(0)}%</span>
                   </div>
                 </div>
                 <button
                   onClick={handleProcessText}
                   disabled={!inputText.trim() || isProcessing}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 shadow-md"
+                  className="px-6 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 shadow-md"
                 >
                   {isProcessing ? (
                     <>
@@ -426,7 +615,7 @@ export default function CurateKnowledgePage() {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/90 backdrop-blur-md text-white p-4 rounded-lg mb-6 border border-red-400">
+            <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-6 border border-red-200">
               <div className="flex items-center gap-2">
                 <span>❌</span>
                 <span>{error}</span>
@@ -436,7 +625,7 @@ export default function CurateKnowledgePage() {
 
           {/* Success Message */}
           {successMessage && (
-            <div className="bg-green-500/90 backdrop-blur-md text-white p-4 rounded-lg mb-6 border border-green-400">
+            <div className="bg-green-50 text-green-800 p-4 rounded-lg mb-6 border border-green-200">
               <div className="flex items-center gap-2">
                 <span>✅</span>
                 <span>{successMessage}</span>
@@ -444,68 +633,74 @@ export default function CurateKnowledgePage() {
             </div>
           )}
 
-          {/* Goal Summary */}
-          {goalSummary && (
-            <div className="bg-blue-500/20 backdrop-blur-md rounded-lg p-4 mb-6 border border-blue-400/30">
-              <div className="flex items-center gap-2 mb-2">
+          {/* Goal Relevance Analysis */}
+          {goal && goalSummary && (
+            <div className="bg-lime-50 rounded-lg p-4 mb-6 border border-lime-200">
+              <div className="flex items-center gap-2 mb-3">
                 <span>🎯</span>
-                <h3 className="font-medium text-blue-200">Goal Analysis Summary</h3>
+                <h3 className="font-medium text-lime-900">Goal Relevance Analysis</h3>
               </div>
-              <p className="text-blue-100 text-sm">{goalSummary}</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-lime-800 text-sm font-medium">Relevance Score:</span>
+                  <span className="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold">
+                    {goalRelevanceScore || 'N/A'}/10
+                  </span>
+                  {/* Priority badge */}
+                  {goalRelevanceScore && (
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      goalRelevanceScore >= 7 ? 'bg-red-100 text-red-800' :
+                      goalRelevanceScore >= 4 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {goalRelevanceScore >= 7 ? 'HIGH' : goalRelevanceScore >= 4 ? 'MEDIUM' : 'LOW'} PRIORITY
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-lime-800 text-sm font-medium block mb-1">Analysis:</span>
+                  <p className="text-lime-800 text-sm leading-relaxed">{goalSummary}</p>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Recommendations Card */}
           {recommendations && (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6 border border-white/20">
-              <div className="border-l-4 border-blue-400 pl-4 mb-6">
-                <h2 className="text-xl font-semibold text-white mb-2">AI Analysis & Recommendations</h2>
-                <p className="text-blue-100 text-sm">Your knowledge has been analyzed. Choose how to proceed:</p>
+            <div className="bg-white rounded-lg p-6 mb-6 border border-lime-100 shadow-sm">
+              <div className="border-l-4 border-lime-400 pl-4 mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">AI Analysis & Recommendations</h2>
+                <p className="text-gray-700 text-sm">Your knowledge has been analyzed. Choose how to proceed:</p>
               </div>
 
               {/* Context Section */}
-              <div className="mb-6 bg-white/5 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-blue-200 mb-3 flex items-center gap-2">
+              <div className="mb-6 bg-lime-50 rounded-lg p-4 border border-lime-100">
+                <h3 className="text-sm font-semibold text-lime-700 mb-3 flex items-center gap-2">
                   📊 INPUT CONTEXT:
                 </h3>
-                <div className="text-white/90 text-sm leading-relaxed max-h-32 overflow-y-auto">
+                <div className="text-gray-900 text-sm leading-relaxed max-h-32 overflow-y-auto">
                   {inputText}
                 </div>
               </div>
 
               {/* Enhanced Similar Category Info */}
-              {/* Debug Information - Remove after fixing */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
-                  <h4 className="text-yellow-200 font-semibold mb-2">🐛 DEBUG INFO:</h4>
-                  <div className="text-xs text-yellow-100 space-y-1">
-                    <div>similarMainCategory: {JSON.stringify(similarMainCategory)}</div>
-                    <div>similarSubCategory: {JSON.stringify(similarSubCategory)}</div>
-                    <div>similarityScore: {JSON.stringify(similarityScore)}</div>
-                    <div>similarityThreshold: {JSON.stringify(similarityThreshold)}</div>
-                    <div>goalProvided: {JSON.stringify(!!goal)}</div>
-                    <div>goalSummary: {JSON.stringify(goalSummary)}</div>
-                    <div>Should show notification: {JSON.stringify(!!similarMainCategory && similarityScore >= similarityThreshold)}</div>
-                  </div>
-                </div>
-              )}
               {similarMainCategory && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-400/30">
-                  <h3 className="text-sm font-semibold text-blue-200 mb-3 flex items-center gap-2">
+                <div className="mb-6 p-4 bg-lime-50 rounded-lg border border-lime-200">
+                  <h3 className="text-sm font-semibold text-lime-800 mb-3 flex items-center gap-2">
                     🔍 SIMILAR CONTENT DETECTED:
                   </h3>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-blue-100 text-sm">
+                      <div className="text-lime-700 text-sm">
                         <div className="mb-1">
                           <span className="font-medium">Category:</span> 
-                          <span className="ml-2 bg-blue-500/30 px-2 py-1 rounded text-xs">
+                          <span className="ml-2 bg-lime-100 px-2 py-1 rounded text-xs text-lime-800">
                             {similarMainCategory}
                           </span>
                           {similarSubCategory && (
                             <>
                               <span className="mx-2">→</span>
-                              <span className="bg-purple-500/30 px-2 py-1 rounded text-xs">
+                              <span className="bg-green-100 px-2 py-1 rounded text-xs text-green-800">
                                 {similarSubCategory}
                               </span>
                             </>
@@ -521,11 +716,10 @@ export default function CurateKnowledgePage() {
                         )}
                       </div>
                     </div>
-                    
                     {/* Similarity Warning */}
                     {similarityScore >= 0.8 && (
-                      <div className="mt-3 p-3 bg-yellow-500/20 border border-yellow-400/30 rounded-lg">
-                        <div className="flex items-center gap-2 text-yellow-200">
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-yellow-800">
                           <span>⚠️</span>
                           <span className="text-sm font-medium">
                             High similarity detected! Consider if this is truly new knowledge or if you should update existing content.
@@ -539,72 +733,52 @@ export default function CurateKnowledgePage() {
 
               {/* AI Recommendations */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-blue-200 mb-4 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-lime-700 mb-4 flex items-center gap-2">
                   💡 AI RECOMMENDATIONS:
                 </h3>
                 <div className="space-y-4">
                   {recommendations.map(rec => (
                     <div
                       key={rec.option_number}
-                      className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-colors"
+                      className="bg-lime-50 border border-lime-100 rounded-lg p-4 hover:bg-lime-100 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           {/* Option Header */}
                           <div className="mb-3">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                                rec.is_goal_aware ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'
-                              }`}>
+                              <span className={`px-2 py-1 rounded text-xs font-semibold bg-lime-600 text-white`}>
                                 Option {rec.option_number}
                               </span>
-                              {rec.is_goal_aware && (
-                                <span className="bg-blue-400/30 text-blue-200 px-2 py-1 rounded text-xs">
-                                  Goal-Aware
+                              {/* Goal-oriented badge for options 1 and 2 */}
+                              {rec.is_goal_aware && (rec.option_number === 1 || rec.option_number === 2) && (
+                                <span className="text-xs px-2 py-1 rounded bg-gradient-to-r from-yellow-400/30 to-orange-500/30 text-yellow-800 border border-yellow-400/30">
+                                  GOAL-ORIENTED
                                 </span>
                               )}
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                rec.action_type === 'create_new' ? 'bg-green-400/30 text-green-200' :
-                                rec.action_type === 'merge' ? 'bg-yellow-400/30 text-yellow-200' :
-                                'bg-blue-400/30 text-blue-200'
-                              }`}>
+                              <span className={`text-xs px-2 py-1 rounded bg-green-100 text-green-800`}>
                                 {rec.action_type?.replace('_', ' ').toUpperCase()}
                               </span>
                             </div>
-                            
-                            {/* Goal-specific info */}
-                            {rec.is_goal_aware && rec.relevance_score && (
-                              <div className="mb-3 p-3 bg-blue-500/20 rounded-lg border border-blue-400/30">
-                                <div className="flex items-center space-x-4 text-sm">
-                                  <span className="text-blue-200 font-medium">
-                                    Relevance: {rec.relevance_score}/10
-                                  </span>
-                                  <span className={`px-2 py-1 rounded text-xs ${
-                                    rec.goal_priority === 'high' ? 'bg-red-400/30 text-red-200' :
-                                    rec.goal_priority === 'medium' ? 'bg-yellow-400/30 text-yellow-200' :
-                                    'bg-green-400/30 text-green-200'
-                                  }`}>
-                                    {rec.goal_priority?.toUpperCase()} PRIORITY
-                                  </span>
-                                </div>
-                                {rec.goal_alignment && (
-                                  <p className="text-sm text-blue-100 mt-2">{rec.goal_alignment}</p>
-                                )}
-                              </div>
-                            )}
-                            
-                            <div className="text-white font-medium">
+                            <div className="text-gray-900 font-medium">
                               {rec.main_category} → {rec.sub_category}
                             </div>
-                            <div className="text-white/70 text-sm mt-1">
+                            <div className="text-gray-600 text-sm mt-1">
                               {rec.change}
                             </div>
                           </div>
 
                           {/* Content Preview */}
                           <div className="mb-3">
-                            <div className="bg-white/10 rounded p-3 text-sm text-white/80 max-h-24 overflow-y-auto">
-                              {rec.preview || rec.updated_text?.substring(0, 200) + '...' || 'No preview available'}
+                            <div className="bg-white rounded p-3 text-sm text-gray-900 max-h-24 overflow-y-auto">
+                              {rec.preview ? (
+                                rec.preview
+                              ) : (
+                                <div className="flex items-center gap-2 text-gray-500">
+                                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-300 border-t-gray-600"></div>
+                                  <span>Generating preview...</span>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -614,13 +788,13 @@ export default function CurateKnowledgePage() {
                               {rec.tags.slice(0, 3).map((tag, index) => ( // Only show first 3 tags
                                 <span
                                   key={index}
-                                  className="bg-blue-400/20 text-blue-200 px-2 py-1 rounded text-xs border border-blue-400/30"
+                                  className="bg-lime-100 text-lime-800 px-2 py-1 rounded text-xs border border-lime-200"
                                 >
                                   {tag}
                                 </span>
                               ))}
                               {rec.tags.length > 3 && (
-                                <span className="text-blue-300 text-xs px-2 py-1">
+                                <span className="text-lime-600 text-xs px-2 py-1">
                                   +{rec.tags.length - 3} more
                                 </span>
                               )}
@@ -632,7 +806,7 @@ export default function CurateKnowledgePage() {
                         <button
                           onClick={() => handleApplyRecommendation(rec)}
                           disabled={isApplying || isProcessing}
-                          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+                          className="bg-lime-600 hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
                         >
                           {isApplying ? (
                             <>
@@ -653,11 +827,11 @@ export default function CurateKnowledgePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4 border-t border-white/20">
+              <div className="flex gap-4 pt-4 border-t border-lime-100">
                 <button
                   onClick={handleDoNothing}
                   disabled={isApplying || isProcessing}
-                  className="px-6 py-2 bg-white/10 text-white rounded hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-white/30"
+                  className="px-6 py-2 bg-white text-lime-700 rounded hover:bg-lime-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-lime-200"
                 >
                   🗑️ Discard Input
                 </button>
@@ -667,23 +841,23 @@ export default function CurateKnowledgePage() {
 
           {/* Bottom Stats */}
           {stats && (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
+            <div className="bg-white rounded-lg p-4 border border-lime-100 shadow-sm">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.total_knowledge_items}</div>
-                  <div className="text-xs text-white/70">Total Items</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.total_knowledge_items}</div>
+                  <div className="text-xs text-gray-600">Total Items</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.unique_main_categories}</div>
-                  <div className="text-xs text-white/70">Main Categories</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.unique_main_categories}</div>
+                  <div className="text-xs text-gray-600">Main Categories</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.unique_sub_categories}</div>
-                  <div className="text-xs text-white/70">Sub Categories</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.unique_sub_categories}</div>
+                  <div className="text-xs text-gray-600">Sub Categories</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{stats.unique_tags}</div>
-                  <div className="text-xs text-white/70">Unique Tags</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.unique_tags}</div>
+                  <div className="text-xs text-gray-600">Unique Tags</div>
                 </div>
               </div>
             </div>

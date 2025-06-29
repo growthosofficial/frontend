@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { knowledgeAPI } from '../../lib/supabase';
 import SidebarNavigation from '../../components/SidebarNavigation';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 // Individual knowledge item card within a subcategory
 const KnowledgeItemCard = ({ item }) => {
@@ -12,48 +13,58 @@ const KnowledgeItemCard = ({ item }) => {
   const shouldTruncate = item.content.length > truncateLength;
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-lg border border-white/30 p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-white/90">
-      {/* Content */}
-      <div className="mb-3">
-        <div className="text-gray-700 text-sm leading-relaxed">
-          {shouldTruncate && !isExpanded 
-            ? `${item.content.substring(0, truncateLength)}...` 
-            : item.content
-          }
-        </div>
-        {shouldTruncate && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-2 text-blue-600 hover:text-blue-800 text-xs font-medium transition-colors"
-          >
-            {isExpanded ? 'Show Less' : 'Show More'}
-          </button>
-        )}
-      </div>
-
-      {/* Tags */}
-      {item.tags && item.tags.length > 0 && (
-        <div className="mb-3">
-          <div className="flex flex-wrap gap-1">
-            {item.tags.map((tag, index) => (
-              <span
-                key={index}
-                className="bg-blue-100/70 text-blue-800 px-2 py-1 rounded-full text-xs font-medium"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+    <div className="bg-white rounded-lg border border-lime-100 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-lime-50">
+      {/* Subcategory Header */}
+      {item.sub_category && (
+        <div className="w-full rounded-t-lg bg-lime-600 text-white text-sm font-semibold px-4 py-2 text-center shadow">
+          {item.sub_category}
         </div>
       )}
+      {/* Card Content */}
+      <div className="p-4">
+        {/* Content */}
+        <div className="mb-3">
+          <div className="text-gray-900 text-sm leading-relaxed">
+            <ReactMarkdown>
+              {shouldTruncate && !isExpanded
+                ? `${item.content.substring(0, truncateLength)}...`
+                : item.content}
+            </ReactMarkdown>
+          </div>
+          {shouldTruncate && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="mt-2 text-lime-700 hover:text-lime-900 text-xs font-medium transition-colors"
+            >
+              {isExpanded ? 'Show Less' : 'Show More'}
+            </button>
+          )}
+        </div>
 
-      {/* Footer */}
-      <div className="text-xs text-gray-500 border-t border-gray-200/50 pt-2">
-        Last updated: {new Date(item.last_updated).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        })}
+        {/* Tags */}
+        {item.tags && item.tags.length > 0 && (
+          <div className="mb-3">
+            <div className="flex flex-wrap gap-1">
+              {item.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="bg-lime-100 text-lime-800 px-2 py-1 rounded-full text-xs font-medium"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="text-xs text-gray-500 border-t border-lime-100 pt-2">
+          Last updated: {new Date(item.last_updated).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </div>
       </div>
     </div>
   );
@@ -73,8 +84,8 @@ const SubCategorySection = ({ subCategory, items }) => {
         </h3>
       </div>
 
-      {/* Knowledge Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Knowledge Items Grid - 2 columns with responsive behavior */}
+      <div className="grid grid-cols-2 gap-4 w-full">
         {items.map(item => (
           <KnowledgeItemCard key={item.id} item={item} />
         ))}
@@ -115,18 +126,18 @@ const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
   const subCategoryCount = Object.keys(groupedBySubCategory).length;
 
   return (
-    <div className={`rounded-xl shadow-lg overflow-hidden bg-gradient-to-br ${getGradientClass(mainCategory)} transition-all duration-300 ${isExpanded ? 'col-span-full' : ''}`}>
+    <div className={`rounded-xl shadow-lg overflow-hidden bg-white border border-lime-100 transition-all duration-300 ${isExpanded ? 'col-span-full' : ''}`}>
       {/* Card Header - Always Visible */}
       <div 
-        className="p-6 cursor-pointer hover:bg-black/10 transition-colors"
+        className="p-6 cursor-pointer hover:bg-lime-50 transition-colors"
         onClick={onToggle}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-white mb-2">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
               {mainCategory}
             </h2>
-            <div className="flex items-center gap-4 text-white/80 text-sm">
+            <div className="flex items-center gap-4 text-lime-700 text-sm">
               <span>{totalItems} items</span>
               <span>•</span>
               <span>{subCategoryCount} categories</span>
@@ -138,13 +149,13 @@ const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
                 {Object.keys(groupedBySubCategory).slice(0, 3).map(subCat => (
                   <span
                     key={subCat}
-                    className="bg-white/20 text-white/90 px-3 py-1 rounded-full text-xs font-medium"
+                    className="bg-lime-100 text-lime-800 px-3 py-1 rounded-full text-xs font-medium"
                   >
                     {subCat}
                   </span>
                 ))}
                 {subCategoryCount > 3 && (
-                  <span className="bg-white/20 text-white/90 px-3 py-1 rounded-full text-xs font-medium">
+                  <span className="bg-lime-100 text-lime-800 px-3 py-1 rounded-full text-xs font-medium">
                     +{subCategoryCount - 3} more
                   </span>
                 )}
@@ -153,7 +164,7 @@ const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
           </div>
           
           <div className="ml-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/20 text-white">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-lime-100 text-lime-700">
               {isExpanded ? (
                 <ChevronDown size={20} />
               ) : (
@@ -162,28 +173,17 @@ const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
             </div>
           </div>
         </div>
-
-        {/* Expanded count badge */}
-        <div className="absolute top-4 right-16">
-          <div className="bg-white/90 text-gray-800 px-3 py-1 rounded-full text-lg font-bold min-w-[3rem] text-center">
-            {totalItems}
-          </div>
-        </div>
       </div>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-6 pb-6">
-          <div className="bg-black/10 rounded-lg p-6">
-            {Object.entries(groupedBySubCategory)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([subCategory, items]) => (
-                <SubCategorySection
-                  key={subCategory}
-                  subCategory={subCategory}
-                  items={items}
-                />
+        <div className="px-6 pb-6 w-full">
+          <div className="bg-black/10 rounded-lg px-4 py-6 w-full">
+            <div className="grid grid-cols-2 gap-4 w-full">
+              {data.map(item => (
+                <KnowledgeItemCard key={item.id} item={item} />
               ))}
+            </div>
           </div>
         </div>
       )}
@@ -274,11 +274,11 @@ export default function OrganizedKnowledgeView() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
         <SidebarNavigation currentPage="knowledge" stats={stats} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lime-600 mb-4 mx-auto"></div>
             <p className="text-gray-600">Loading your knowledge database...</p>
           </div>
         </div>
@@ -288,7 +288,7 @@ export default function OrganizedKnowledgeView() {
 
   if (error) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
         <SidebarNavigation currentPage="knowledge" stats={stats} />
         <div className="flex-1 flex items-center justify-center">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
@@ -307,15 +307,15 @@ export default function OrganizedKnowledgeView() {
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
       <SidebarNavigation currentPage="knowledge" stats={stats} />
       
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-6">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">Knowledge Database</h1>
-            <p className="text-gray-600 text-lg">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Knowledge Database</h1>
+            <p className="text-gray-700 text-lg">
               Organized view of your {knowledgeItems.length} knowledge items across {Object.keys(groupedByMainCategory).length} categories
             </p>
           </div>
@@ -329,9 +329,9 @@ export default function OrganizedKnowledgeView() {
                 placeholder="Search across all categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-lime-200 rounded-xl focus:ring-2 focus:ring-lime-400 focus:border-transparent outline-none transition-all text-gray-900 placeholder:text-gray-400"
               />
-              <div className="absolute left-3 top-3 text-gray-400">
+              <div className="absolute left-3 top-3 text-lime-500">
                 🔍
               </div>
             </div>
@@ -340,13 +340,13 @@ export default function OrganizedKnowledgeView() {
             <div className="flex gap-2">
               <button
                 onClick={expandAll}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition-colors text-sm font-medium shadow"
               >
                 Expand All
               </button>
               <button
                 onClick={collapseAll}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium shadow"
               >
                 Collapse All
               </button>
@@ -370,7 +370,7 @@ export default function OrganizedKnowledgeView() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">🔍</div>
+              <div className="text-lime-400 text-6xl mb-4">🔍</div>
               <h3 className="text-xl font-medium text-gray-600 mb-2">
                 {searchTerm ? 'No matching items found' : 'No knowledge items found'}
               </h3>
@@ -383,7 +383,7 @@ export default function OrganizedKnowledgeView() {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                  className="mt-3 bg-lime-600 text-white px-4 py-2 rounded-lg hover:bg-lime-700"
                 >
                   Clear Search
                 </button>

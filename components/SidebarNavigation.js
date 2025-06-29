@@ -23,7 +23,7 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
     {
       title: "Favorites",
       items: [
-        { href: "#", icon: <User2 size={16} />, label: "User" },
+        { href: "/profile", icon: <User2 size={16} />, label: "User" },
         {
           href: "/knowledge",
           icon: <BookOpen size={16} />,
@@ -123,6 +123,18 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
           />
         ))}
       </nav>
+
+      {/* Onboarding Button at Bottom */}
+      <div className="mt-auto pt-4 flex justify-center">
+        <Link
+          href="/onboarding"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-lime-100 text-lime-700 hover:bg-lime-200 transition-colors text-xs font-semibold shadow"
+          title="Go to Onboarding"
+        >
+          <Grid3X3 size={16} className="text-lime-500" />
+          {isExpanded && <span>Onboarding</span>}
+        </Link>
+      </div>
     </aside>
   )
 }
