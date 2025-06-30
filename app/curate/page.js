@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { processText } from '../../lib/api';
-import { knowledgeAPI } from '../../lib/supabase';
+import { knowledgeAPI, userProfileAPI } from '../../lib/supabase';
 import SidebarNavigation from '../../components/SidebarNavigation';
 
 export default function CurateKnowledgePage() {
   const [inputText, setInputText] = useState('');
   const [goal, setGoal] = useState(''); // New goal state
+  const [selectedGoalData, setSelectedGoalData] = useState(null); // Store complete goal data
   const [isProcessing, setIsProcessing] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
   const [similarMainCategory, setSimilarMainCategory] = useState(null);
@@ -20,9 +21,10 @@ export default function CurateKnowledgePage() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [inputMode, setInputMode] = useState('text'); // Default to text mode
-  const [similarityThreshold, setSimilarityThreshold] = useState(0.8);
+  const [similarityThreshold, setSimilarityThreshold] = useState(0.2);
   const [isApplying, setIsApplying] = useState(false);
   const [showGoalDropdown, setShowGoalDropdown] = useState(false);
+  const [userGoals, setUserGoals] = useState([]); // New state for user goals
   const goalInputRef = useRef(null);
   const placeholderGoals = [
     'Learn machine learning for building recommendation systems',
@@ -32,11 +34,23 @@ export default function CurateKnowledgePage() {
   const [fileLoading, setFileLoading] = useState(false);
   const [fileError, setFileError] = useState('');
 
-  // Load categories and stats on component mount
+  // Load categories, stats, and user goals on component mount
   useEffect(() => {
     loadCategories();
     loadStats();
+    loadUserGoals();
   }, []);
+
+  const loadUserGoals = async () => {
+    try {
+      const goals = await userProfileAPI.getUserGoals();
+      setUserGoals(goals);
+      console.log('📋 Loaded user goals:', goals);
+    } catch (error) {
+      console.error('Failed to load user goals:', error);
+      setUserGoals([]);
+    }
+  };
 
   const loadCategories = async () => {
     try {
@@ -119,10 +133,55 @@ export default function CurateKnowledgePage() {
       console.log('🚀 Starting parallel processing...');
       console.log('🎯 Goal provided:', !!goal);
       
+      // Prepare goal context data for backend API
+      let goalContext = null;
+      
+      // Always try to get the user's profile data first
+      const userProfile = userGoals.length > 0 ? userGoals[0] : null;
+      
+      if (userProfile) {
+        // Concatenate all user profile information into a single goal string
+        const goalParts = [];
+        
+        // Add the selected/entered goal or fallback to profile goal
+        const currentGoal = goal.trim() || userProfile.goal_idea;
+        if (currentGoal) {
+          goalParts.push(`Goal: ${currentGoal}`);
+        }
+        
+        // Add working role and industry
+        if (userProfile.working_role) {
+          goalParts.push(`Role: ${userProfile.working_role}`);
+        }
+        if (userProfile.working_industry) {
+          goalParts.push(`Industry: ${userProfile.working_industry}`);
+        }
+        
+        // Add goal domain and reason
+        if (userProfile.goal_domain) {
+          goalParts.push(`Domain: ${userProfile.goal_domain}`);
+        }
+        if (userProfile.goal_reason) {
+          goalParts.push(`Why: ${userProfile.goal_reason}`);
+        }
+        
+        // Add target date
+        if (userProfile.goal_prospective_achieve_date) {
+          goalParts.push(`Target Date: ${userProfile.goal_prospective_achieve_date}`);
+        }
+        
+        goalContext = goalParts.join('. ');
+        console.log('🎯 Sending concatenated goal context to backend:', goalContext);
+      } else if (goal.trim()) {
+        // If no user profile exists, send just the goal
+        goalContext = goal.trim();
+        console.log('🎯 No user profile found, sending basic goal to backend:', goalContext);
+      }
+      
       // 🚀 RUN BOTH APIs IN TRUE PARALLEL
       const [backendResult, previewResult] = await Promise.all([
-        // Backend processing
-        processText(inputText, similarityThreshold, goal.trim() || null)
+        // Backend processing - pass goal context instead of just goal text
+        processText(inputText, similarityThreshold, goalContext)
           .catch(error => {
             console.error('❌ Backend processing failed:', error);
             throw new Error(`Backend processing failed: ${error.message}`);
@@ -218,6 +277,24 @@ export default function CurateKnowledgePage() {
         throw new Error('Recommendation missing instructions');
       }
 
+      // Retrieve actual content of similar knowledge if available
+      let similarKnowledgeContent = null;
+      if (similarMainCategory && similarSubCategory) {
+        try {
+          console.log('🔍 Retrieving similar knowledge content from database...');
+          const similarKnowledge = await knowledgeAPI.getByCategory(similarMainCategory, similarSubCategory);
+          if (similarKnowledge) {
+            similarKnowledgeContent = similarKnowledge.content;
+            console.log(`✅ Retrieved similar knowledge content: ${similarKnowledgeContent.length} characters`);
+          } else {
+            console.log('⚠️ No similar knowledge content found in database');
+          }
+        } catch (error) {
+          console.error('❌ Failed to retrieve similar knowledge content:', error);
+          // Continue without similar knowledge content
+        }
+      }
+
       // Call Phase 2 LLM processing
       console.log('🔄 Calling Phase 2 LLM processing...');
       const phase2Response = await fetch('/api/knowledge-generate', {
@@ -229,7 +306,7 @@ export default function CurateKnowledgePage() {
           action_type: recommendation.action_type,
           input_text: inputText,
           instructions: recommendation.instructions,
-          similar_knowledge: similarMainCategory ? `${similarMainCategory} → ${similarSubCategory}` : null,
+          similar_knowledge: similarKnowledgeContent || null,
           main_category: recommendation.main_category,
           sub_category: recommendation.sub_category,
           tags: recommendation.tags || []
@@ -486,6 +563,11 @@ export default function CurateKnowledgePage() {
             <div className="bg-white rounded-lg p-6 mb-4 border border-lime-100 shadow-sm">
               <label className="block text-sm font-medium text-gray-900 mb-3">
                 🎯 Learning Goal (Optional)
+                {userGoals.length > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-lime-100 text-lime-800">
+                    ✓ Complete Context
+                  </span>
+                )}
               </label>
               <div className="flex items-center gap-2 relative">
                 <input
@@ -508,13 +590,45 @@ export default function CurateKnowledgePage() {
                 </button>
                 {showGoalDropdown && (
                   <div className="absolute right-0 top-12 z-10 bg-white border border-lime-200 rounded-lg shadow-lg w-80 min-w-max">
+                    {/* Show user goals first, then placeholder goals if no user goals */}
+                    {userGoals.length > 0 ? (
+                      <>
+                        <div className="px-4 py-2 bg-lime-50 text-lime-700 text-xs font-medium border-b border-lime-200">
+                          Your Goals
+                        </div>
+                        {userGoals.map((goalData, idx) => (
+                          <button
+                            key={`user-${idx}`}
+                            type="button"
+                            className="block w-full text-left px-4 py-2 hover:bg-lime-50 text-gray-900 text-sm"
+                            onClick={() => {
+                              setGoal(goalData.goal_idea);
+                              setSelectedGoalData(goalData); // Store complete profile data
+                              setShowGoalDropdown(false);
+                              if (goalInputRef.current) goalInputRef.current.focus();
+                            }}
+                          >
+                            {goalData.goal_idea}
+                          </button>
+                        ))}
+                        <div className="px-4 py-2 bg-gray-50 text-gray-700 text-xs font-medium border-b border-gray-200">
+                          Example Goals
+                        </div>
+                      </>
+                    ) : (
+                      <div className="px-4 py-2 bg-gray-50 text-gray-700 text-xs font-medium border-b border-gray-200">
+                        Example Goals
+                      </div>
+                    )}
                     {placeholderGoals.map((g, idx) => (
                       <button
-                        key={idx}
+                        key={`placeholder-${idx}`}
                         type="button"
                         className="block w-full text-left px-4 py-2 hover:bg-lime-50 text-gray-900 text-sm"
                         onClick={() => {
                           setGoal(g);
+                          // Keep the user profile data if available, just update the goal text
+                          setSelectedGoalData(userGoals.length > 0 ? userGoals[0] : null);
                           setShowGoalDropdown(false);
                           if (goalInputRef.current) goalInputRef.current.focus();
                         }}
@@ -527,7 +641,10 @@ export default function CurateKnowledgePage() {
               </div>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-600">
-                  Providing a goal helps AI prioritize and assess relevance of knowledge
+                  {selectedGoalData 
+                    ? "Complete goal context will be sent to AI (role, industry, domain, reason)"
+                    : "Providing a goal helps AI prioritize and assess relevance of knowledge"
+                  }
                 </p>
                 <span className="text-xs text-gray-500">{goal.length}/120</span>
               </div>
@@ -564,7 +681,7 @@ export default function CurateKnowledgePage() {
           ) : (
             <div className="bg-white rounded-lg p-6 mb-6 border border-lime-100 shadow-sm">
               <label className="block text-sm font-medium text-gray-900 mb-3">
-                💭 What did you learn today?
+                💭 Just drop your knowledge in...
               </label>
               <textarea
                 value={inputText}
@@ -582,7 +699,7 @@ export default function CurateKnowledgePage() {
                     <label className="text-sm text-gray-600">Similarity threshold:</label>
                     <input
                       type="range"
-                      min="0.5"
+                      min="0"
                       max="1.0"
                       step="0.1"
                       value={similarityThreshold}

@@ -31,8 +31,8 @@ export default function LoginPage() {
       // In production, you'd validate against your auth system
       console.log('Login attempt:', { email, password });
 
-      // Redirect to curate page on successful login
-      router.push('/curate');
+      // Redirect to onboarding page on successful login
+      router.push('/onboarding');
     } catch (error) {
       setError('Login failed. Please try again.');
     } finally {
