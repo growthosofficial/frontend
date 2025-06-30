@@ -574,7 +574,7 @@ export default function SelfTestPage() {
                               <div className="text-right">
                                 <div
                                   className="text-2xl font-bold"
-                                  style={{ color: getScoreGradientColor(evaluation.score / 100) }}
+                                  style={{ color: getScoreColor(evaluation.score / 100) }}
                                 >
                                   {evaluation.score !== null && evaluation.score !== undefined ? `${(evaluation.score * 20).toFixed(0)}%` : 'N/A'}
                                 </div>
