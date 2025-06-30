@@ -220,6 +220,7 @@ export default function SelfTestPage() {
   };
 
   const currentQuestion = questions[currentQuestionIndex];
+  console.log(evaluations)
 
   const handleCategoryClick = (categoryType, categoryName) => {
     // Show category information or filter questions
@@ -629,22 +630,24 @@ export default function SelfTestPage() {
                                 <div
                                   key={optIndex}
                                   className={`p-2 rounded ${
-                                    optIndex === evaluation.selected_index
+                                    optIndex === evaluation.selected_answer_index
                                       ? evaluation.is_correct
                                         ? 'bg-green-50 border border-green-200 text-green-800'
                                         : 'bg-red-50 border border-red-200 text-red-800'
-                                      : optIndex === evaluation.correct_answer_index
+                                      : optIndex === evaluation.correct_answer_index && !evaluation.is_correct
                                       ? 'bg-green-50 border border-green-200 text-green-800'
-                                      : 'bg-gray-100 text-gray-700'
+                                      : 'bg-gray-50 text-gray-700'
                                   }`}
                                 >
                                   <span className="font-medium mr-2">{String.fromCharCode(65 + optIndex)}.</span>
                                   {option}
                                   {optIndex === evaluation.correct_answer_index && (
-                                    <span className="ml-2 text-green-600">✓ Correct</span>
+                                    <span className="ml-2 text-green-600">✓ Correct Answer</span>
                                   )}
-                                  {optIndex === evaluation.selected_index && !evaluation.is_correct && (
-                                    <span className="ml-2 text-red-600">✗ Your Answer</span>
+                                  {optIndex === evaluation.selected_answer_index && (
+                                    <span className={`ml-2 ${evaluation.is_correct ? 'text-green-600' : 'text-red-600'}`}>
+                                      {evaluation.is_correct ? '✓ Your Answer (Correct)' : '✗ Your Answer (Incorrect)'}
+                                    </span>
                                   )}
                                 </div>
                               ))}
