@@ -220,11 +220,13 @@ export default function SelfTestPage() {
 
   const getScoreColor = (score, testMode, isCorrect = null) => {
     if (testMode === 'free-text') {
-      // Free-text uses 1-5 scale
-      if (score >= 4) return 'text-green-500';
-      if (score >= 3) return 'text-blue-500';
-      if (score >= 2) return 'text-yellow-500';
-      return 'text-red-500';
+      // Very tough grading: 0 is unacceptable, 5 is exceptional
+      if (score >= 5) return 'text-green-600'; // Exceptional - extremely rare
+      if (score >= 4) return 'text-green-500'; // Good - requires significant effort
+      if (score >= 3) return 'text-yellow-500'; // Basic - needs improvement
+      if (score >= 2) return 'text-orange-500'; // Poor - significant gaps
+      if (score >= 1) return 'text-red-500'; // Very poor - major issues
+      return 'text-red-600'; // Unacceptable - score 0
     } else {
       // Multiple-choice uses binary correct/incorrect
       return isCorrect ? 'text-green-500' : 'text-red-500';
@@ -248,7 +250,7 @@ export default function SelfTestPage() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+    <div className="h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
       <div className="flex h-full">
         <SidebarNavigation currentPage="test" />
         
@@ -256,36 +258,36 @@ export default function SelfTestPage() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <Brain size={32} className="text-blue-400" />
-              <h1 className="text-3xl font-bold text-white">Self Test</h1>
+              <Brain size={32} className="text-lime-500" />
+              <h1 className="text-3xl font-bold text-gray-800">Self Test</h1>
               <div className="flex items-center gap-2 ml-auto">
                 {backendStatus === 'connected' ? (
-                  <div className="flex items-center gap-1 text-green-400">
+                  <div className="flex items-center gap-1 text-lime-600">
                     <Wifi size={16} />
                     <span className="text-sm">Connected</span>
                   </div>
                 ) : backendStatus === 'disconnected' ? (
-                  <div className="flex items-center gap-1 text-red-400">
+                  <div className="flex items-center gap-1 text-red-500">
                     <WifiOff size={16} />
                     <span className="text-sm">Disconnected</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-yellow-400">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-400 border-t-transparent"></div>
+                  <div className="flex items-center gap-1 text-yellow-600">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
                     <span className="text-sm">Checking...</span>
                   </div>
                 )}
               </div>
             </div>
-            <p className="text-gray-400">Test your knowledge and track your mastery progress</p>
+            <p className="text-gray-600">Test your knowledge and track your mastery progress</p>
           </div>
 
           {/* Backend Status Warning */}
           {backendStatus === 'disconnected' && (
-            <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <div className="flex items-center gap-2">
-                <WifiOff size={20} className="text-red-400" />
-                <p className="text-red-400">Backend is not available. Some features may not work properly.</p>
+                <WifiOff size={20} className="text-red-500" />
+                <p className="text-red-600">Backend is not available. Some features may not work properly.</p>
               </div>
             </div>
           )}
@@ -293,41 +295,41 @@ export default function SelfTestPage() {
           {/* Stats Overview */}
           {stats && backendStatus === 'connected' && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-4 border border-gray-700">
+              <div className="bg-white/80 backdrop-blur-lg rounded-lg p-4 border border-lime-200 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <BookOpen className="text-blue-400" size={20} />
+                  <BookOpen className="text-lime-500" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Total Items</p>
-                    <p className="text-white text-xl font-bold">{stats.total_items}</p>
+                    <p className="text-gray-600 text-sm">Total Items</p>
+                    <p className="text-gray-800 text-xl font-bold">{stats.total_items}</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-4 border border-gray-700">
+              <div className="bg-white/80 backdrop-blur-lg rounded-lg p-4 border border-lime-200 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <Target className="text-green-400" size={20} />
+                  <Target className="text-lime-500" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Categories</p>
-                    <p className="text-white text-xl font-bold">{stats.unique_main_categories}</p>
+                    <p className="text-gray-600 text-sm">Categories</p>
+                    <p className="text-gray-800 text-xl font-bold">{stats.unique_main_categories}</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-4 border border-gray-700">
+              <div className="bg-white/80 backdrop-blur-lg rounded-lg p-4 border border-lime-200 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <BarChart3 className="text-purple-400" size={20} />
+                  <BarChart3 className="text-lime-500" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Avg Mastery</p>
-                    <p className="text-white text-xl font-bold">
+                    <p className="text-gray-600 text-sm">Avg Mastery</p>
+                    <p className="text-gray-800 text-xl font-bold">
                       {stats.avg_strength_score ? `${(stats.avg_strength_score * 100).toFixed(1)}%` : 'N/A'}
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-4 border border-gray-700">
+              <div className="bg-white/80 backdrop-blur-lg rounded-lg p-4 border border-lime-200 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <Zap className="text-yellow-400" size={20} />
+                  <Zap className="text-lime-500" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Strong Items</p>
-                    <p className="text-white text-xl font-bold">{stats.strong_items || 0}</p>
+                    <p className="text-gray-600 text-sm">Strong Items</p>
+                    <p className="text-gray-800 text-xl font-bold">{stats.strong_items || 0}</p>
                   </div>
                 </div>
               </div>
@@ -336,19 +338,19 @@ export default function SelfTestPage() {
 
           {/* Test Setup */}
           {!testStarted && (
-            <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-gray-700 mb-8">
-              <h2 className="text-xl font-semibold text-white mb-4">Create Your Test</h2>
+            <div className="bg-white/80 backdrop-blur-lg rounded-lg p-6 border border-lime-200 shadow-sm mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Create Your Test</h2>
               
               {/* Test Mode Selection */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-3">Test Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Test Type</label>
                 <div className="flex gap-4">
                   <button
                     onClick={() => setTestMode('free-text')}
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                       testMode === 'free-text'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-lime-600 border-lime-500 text-white'
+                        : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     <FileText size={20} />
@@ -358,8 +360,8 @@ export default function SelfTestPage() {
                     onClick={() => setTestMode('multiple-choice')}
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                       testMode === 'multiple-choice'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-lime-600 border-lime-500 text-white'
+                        : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     <List size={20} />
@@ -371,13 +373,13 @@ export default function SelfTestPage() {
               {/* Test Configuration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Number of Questions
                   </label>
                   <select
                     value={numQuestions}
                     onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
                   >
                     {[3, 5, 10, 15, 20].map(num => (
                       <option key={num} value={num}>{num} questions</option>
@@ -386,13 +388,13 @@ export default function SelfTestPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category (Optional)
                   </label>
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
                   >
                     <option value="">All Categories</option>
                     {categories.map(cat => (
@@ -408,7 +410,7 @@ export default function SelfTestPage() {
               <button
                 onClick={generateQuestions}
                 disabled={isGenerating || backendStatus !== 'connected'}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                className="w-full bg-lime-600 hover:bg-lime-700 disabled:bg-lime-800 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
               >
                 {isGenerating ? (
                   <>
@@ -427,46 +429,46 @@ export default function SelfTestPage() {
 
           {/* Error and Success Messages */}
           {error && (
-            <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-4 mb-6">
-              <p className="text-red-400">❌ {error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-600">❌ {error}</p>
             </div>
           )}
 
           {successMessage && (
-            <div className="bg-green-600/20 border border-green-600/50 rounded-lg p-4 mb-6">
-              <p className="text-green-400">✅ {successMessage}</p>
+            <div className="bg-lime-50 border border-lime-200 rounded-lg p-4 mb-6">
+              <p className="text-lime-700">✅ {successMessage}</p>
             </div>
           )}
 
           {/* Test Interface */}
           {testStarted && questions.length > 0 && !testCompleted && (
-            <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-gray-700">
+            <div className="bg-white/80 backdrop-blur-lg rounded-lg p-6 border border-lime-200 shadow-sm">
               {/* Progress Bar */}
               <div className="mb-6">
-                <div className="flex justify-between text-sm text-gray-400 mb-2">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
                   <span>{Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}% Complete</span>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-lime-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
                   ></div>
                 </div>
               </div>
 
               {/* Question */}
-              <div className="mb-6 bg">
+              <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <span 
-                    className="bg-blue-600 text-white px-2 py-1 rounded text-sm font-medium cursor-pointer hover:bg-blue-700 transition-colors"
+                    className="bg-lime-600 text-white px-2 py-1 rounded text-sm font-medium cursor-pointer hover:bg-lime-700 transition-colors"
                     title={`Main Category: ${currentQuestion.main_category}`}
                     onClick={() => handleCategoryClick('Main Category', currentQuestion.main_category)}
                   >
                     {currentQuestion.main_category}
                   </span>
                   <span 
-                    className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-sm cursor-pointer hover:bg-gray-500 transition-colors"
+                    className="bg-gray-500 text-white px-2 py-1 rounded text-sm cursor-pointer hover:bg-gray-600 transition-colors"
                     title={`Sub Category: ${currentQuestion.sub_category}`}
                     onClick={() => handleSubCategoryClick(currentQuestion.sub_category)}
                   >
@@ -474,7 +476,7 @@ export default function SelfTestPage() {
                   </span>
                 </div>
                 
-                <h3 className="text-lg font-medium text-white mb-4">
+                <h3 className="text-lg font-medium text-gray-800 mb-4">
                   {currentQuestion.question_text}
                 </h3>
 
@@ -483,7 +485,7 @@ export default function SelfTestPage() {
                   <div className="flex items-center gap-2 mb-4">
                     {currentQuestion.main_category && (
                       <span 
-                        className="bg-blue-600 text-white px-2 py-1 rounded text-sm font-medium cursor-pointer hover:bg-blue-700 transition-colors"
+                        className="bg-lime-600 text-white px-2 py-1 rounded text-sm font-medium cursor-pointer hover:bg-lime-700 transition-colors"
                         title={`Main Category: ${currentQuestion.main_category}`}
                         onClick={() => handleCategoryClick('Main Category', currentQuestion.main_category)}
                       >
@@ -492,7 +494,7 @@ export default function SelfTestPage() {
                     )}
                     {currentQuestion.sub_category && (
                       <span 
-                        className="bg-gray-600 text-gray-300 px-2 py-1 rounded text-sm cursor-pointer hover:bg-gray-500 transition-colors"
+                        className="bg-gray-500 text-white px-2 py-1 rounded text-sm cursor-pointer hover:bg-gray-600 transition-colors"
                         title={`Sub Category: ${currentQuestion.sub_category}`}
                         onClick={() => handleSubCategoryClick(currentQuestion.sub_category)}
                       >
@@ -505,19 +507,19 @@ export default function SelfTestPage() {
                 {/* Answer Input */}
                 {testMode === 'free-text' ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Your Answer
                     </label>
                     <textarea
                       value={answers[`${currentQuestion.knowledge_id}_${currentQuestionIndex}`] || ''}
                       onChange={(e) => handleAnswerChange(`${currentQuestion.knowledge_id}_${currentQuestionIndex}`, e.target.value)}
                       placeholder="Type your answer here..."
-                      className="w-full h-32 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full h-32 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 resize-none"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
                       Select the best answer:
                     </label>
                     <div className="space-y-3">
@@ -527,8 +529,8 @@ export default function SelfTestPage() {
                           onClick={() => handleMultipleChoiceAnswer(`${currentQuestion.question_id}_${currentQuestionIndex}`, index)}
                           className={`w-full text-left p-3 rounded-lg border transition-all ${
                             answers[`${currentQuestion.question_id}_${currentQuestionIndex}`] === index
-                              ? 'bg-blue-600 border-blue-500 text-white'
-                              : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                              ? 'bg-lime-600 border-lime-500 text-white'
+                              : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
                           }`}
                         >
                           <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
@@ -545,7 +547,7 @@ export default function SelfTestPage() {
                 <button
                   onClick={prevQuestion}
                   disabled={currentQuestionIndex === 0}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed text-white rounded-lg transition-all"
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all"
                 >
                   <ChevronLeft size={16} />
                   Previous
@@ -555,7 +557,7 @@ export default function SelfTestPage() {
                   <button
                     onClick={submitAnswers}
                     disabled={isEvaluating}
-                    className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white rounded-lg transition-all"
+                    className="flex items-center gap-2 px-6 py-2 bg-lime-600 hover:bg-lime-700 disabled:bg-lime-800 disabled:cursor-not-allowed text-white rounded-lg transition-all"
                   >
                     {isEvaluating ? (
                       <>
@@ -572,7 +574,7 @@ export default function SelfTestPage() {
                 ) : (
                   <button
                     onClick={nextQuestion}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-lime-600 hover:bg-lime-700 text-white rounded-lg transition-all"
                   >
                     Next
                     <ChevronRight size={16} />
@@ -586,17 +588,17 @@ export default function SelfTestPage() {
           {testCompleted && evaluations.length > 0 && (
             <div className="space-y-6">
               {/* Summary */}
-              <div className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-gray-700">
-                <h2 className="text-xl font-semibold text-white mb-4">Test Results</h2>
+              <div className="bg-white/80 backdrop-blur-lg rounded-lg p-6 border border-lime-200 shadow-sm">
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Test Results</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="text-center">
-                    <p className="text-gray-400 text-sm">Total Questions</p>
-                    <p className="text-white text-2xl font-bold">{evaluations.length}</p>
+                    <p className="text-gray-600 text-sm">Total Questions</p>
+                    <p className="text-gray-800 text-2xl font-bold">{evaluations.length}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-400 text-sm">Average Score</p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-gray-600 text-sm">Average Score</p>
+                    <p className="text-gray-800 text-2xl font-bold">
                       {testMode === 'free-text' 
                         ? `${((evaluations.reduce((sum, evaluation) => sum + (evaluation.score || 0), 0) / evaluations.length) * 20).toFixed(1)}%`
                         : `${((evaluations.reduce((sum, evaluation) => sum + (evaluation.is_correct ? 1 : 0), 0) / evaluations.length) * 100).toFixed(1)}%`
@@ -604,12 +606,12 @@ export default function SelfTestPage() {
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-400 text-sm">
+                    <p className="text-gray-600 text-sm">
                       {testMode === 'free-text' ? 'Strong Answers' : 'Correct Answers'}
                     </p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-gray-800 text-2xl font-bold">
                       {testMode === 'free-text'
-                        ? evaluations.filter(evaluation => (evaluation.score || 0) >= 4).length
+                        ? evaluations.filter(evaluation => (evaluation.score || 0) >= 5).length
                         : evaluations.filter(evaluation => evaluation.is_correct).length
                       }
                     </p>
@@ -618,7 +620,7 @@ export default function SelfTestPage() {
 
                 <button
                   onClick={resetTest}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all"
+                  className="flex items-center gap-2 px-4 py-2 bg-lime-600 hover:bg-lime-700 text-white rounded-lg transition-all"
                 >
                   <RefreshCw size={16} />
                   Take Another Test
@@ -628,49 +630,65 @@ export default function SelfTestPage() {
               {/* Detailed Results */}
               <div className="space-y-4">
                 {evaluations.map((evaluation, index) => (
-                  <div key={index} className="bg-gray-800/50 backdrop-blur-lg rounded-lg p-6 border border-gray-700">
+                  <div key={index} className="bg-white/80 backdrop-blur-lg rounded-lg p-6 border border-lime-200 shadow-sm">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         {testMode === 'free-text' ? (
                           <>
-                            <h3 className="text-lg font-medium text-white mb-2">
-                              Question {index + 1}
-                            </h3>
-                            <p className="text-gray-300 mb-3">{evaluation.question_text}</p>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-lg font-medium text-gray-800">
+                                Question {index + 1}
+                              </h3>
+                              <div className="text-right">
+                                <div className={`text-2xl font-bold ${getScoreColor(evaluation.score, testMode, evaluation.is_correct)}`}>
+                                  {evaluation.score !== null && evaluation.score !== undefined ? `${(evaluation.score * 20).toFixed(0)}%` : 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  Score: {evaluation.score !== null && evaluation.score !== undefined ? evaluation.score : 'N/A'}/5
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-gray-700 mb-3">{evaluation.question_text}</p>
                             <div className="mb-3">
-                              <p className="text-sm text-gray-400 mb-1">Your Answer:</p>
-                              <p className="text-gray-300 bg-gray-700 p-3 rounded">{evaluation.answer}</p>
+                              <p className="text-sm text-gray-600 mb-1">Your Answer:</p>
+                              <p className="text-gray-800 bg-gray-100 p-3 rounded">{evaluation.answer}</p>
                             </div>
                           </>
                         ) : (
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
-                              <h3 className="text-lg font-medium text-white mb-2">
+                              <h3 className="text-lg font-medium text-gray-800 mb-2">
                                 Question {index + 1}
                               </h3>
-                              <p className="text-gray-300">{evaluation.question_text}</p>
-                            </div>
-                            <div className="ml-4 text-right">
-                              <div className={`text-2xl font-bold ${getScoreColor(evaluation.score, testMode, evaluation.is_correct)} flex items-center gap-2`}>
-                                {evaluation.is_correct ? (
-                                  <>
-                                    <CheckCircle size={20} className="text-green-500" />
-                                    Correct
-                                  </>
-                                ) : (
-                                  <>
-                                    <XCircle size={20} className="text-red-500" />
-                                    Incorrect
-                                  </>
+                              {/* Category badges for multiple choice questions */}
+                              <div className="flex items-center gap-2 mb-3">
+                                {(evaluation.main_category || evaluation.category) && (
+                                  <span 
+                                    className="bg-lime-600 text-white px-2 py-1 rounded text-sm font-medium cursor-pointer hover:bg-lime-700 transition-colors"
+                                    title={`Main Category: ${evaluation.main_category || evaluation.category}`}
+                                    onClick={() => handleCategoryClick('Main Category', evaluation.main_category || evaluation.category)}
+                                  >
+                                    {evaluation.main_category || evaluation.category}
+                                  </span>
+                                )}
+                                {(evaluation.sub_category || evaluation.subcategory) && (
+                                  <span 
+                                    className="bg-gray-500 text-white px-2 py-1 rounded text-sm cursor-pointer hover:bg-gray-600 transition-colors"
+                                    title={`Sub Category: ${evaluation.sub_category || evaluation.subcategory}`}
+                                    onClick={() => handleSubCategoryClick(evaluation.sub_category || evaluation.subcategory)}
+                                  >
+                                    {evaluation.sub_category || evaluation.subcategory}
+                                  </span>
                                 )}
                               </div>
+                              <p className="text-gray-700">{evaluation.question_text}</p>
                             </div>
                           </div>
                         )}
 
                         {testMode === 'multiple-choice' && evaluation.options && (
                           <div className="mb-3">
-                            <p className="text-sm text-gray-400 mb-2">Your Selection:</p>
+                            <p className="text-sm text-gray-600 mb-2">Your Selection:</p>
                             <div className="space-y-1">
                               {evaluation.options.map((option, optIndex) => (
                                 <div
@@ -678,20 +696,20 @@ export default function SelfTestPage() {
                                   className={`p-2 rounded ${
                                     optIndex === evaluation.selected_index
                                       ? evaluation.is_correct
-                                        ? 'bg-green-600/20 border border-green-500 text-green-300'
-                                        : 'bg-red-600/20 border border-red-500 text-red-300'
+                                        ? 'bg-green-50 border border-green-200 text-green-800'
+                                        : 'bg-red-50 border border-red-200 text-red-800'
                                       : optIndex === evaluation.correct_answer_index
-                                      ? 'bg-green-600/20 border border-green-500 text-green-300'
-                                      : 'bg-gray-700 text-gray-300'
+                                      ? 'bg-green-50 border border-green-200 text-green-800'
+                                      : 'bg-gray-100 text-gray-700'
                                   }`}
                                 >
                                   <span className="font-medium mr-2">{String.fromCharCode(65 + optIndex)}.</span>
                                   {option}
                                   {optIndex === evaluation.correct_answer_index && (
-                                    <span className="ml-2 text-green-400">✓ Correct</span>
+                                    <span className="ml-2 text-green-600">✓ Correct</span>
                                   )}
                                   {optIndex === evaluation.selected_index && !evaluation.is_correct && (
-                                    <span className="ml-2 text-red-400">✗ Your Answer</span>
+                                    <span className="ml-2 text-red-600">✗ Your Answer</span>
                                   )}
                                 </div>
                               ))}
@@ -699,46 +717,33 @@ export default function SelfTestPage() {
                           </div>
                         )}
                       </div>
-                      
-                      {testMode === 'free-text' && (
-                        <div className="ml-4 text-right">
-                          <div className={`text-2xl font-bold ${getScoreColor(evaluation.score, testMode, evaluation.is_correct)}`}>
-                            {evaluation.score ? `${(evaluation.score * 20).toFixed(0)}%` : 'N/A'}
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-sm text-gray-400">
-                              Score: {evaluation.score || 'N/A'}/5
-                            </span>
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     {/* Feedback */}
-                    <div className="bg-gray-700/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-300 mb-2">Feedback</h4>
-                      <p className="text-gray-300 text-sm">{evaluation.feedback}</p>
+                    <div className="bg-lime-50 rounded-lg p-4 border border-lime-200">
+                      <h4 className="text-sm font-medium text-lime-700 mb-2">Feedback</h4>
+                      <p className="text-gray-700 text-sm">{evaluation.feedback}</p>
                     </div>
 
                     {/* Mastery Update */}
                     {evaluation.mastery !== undefined && evaluation.mastery !== null && (
-                      <div className="mt-4 p-3 bg-gray-700/30 rounded-lg">
+                      <div className="mt-4 p-3 bg-lime-50 rounded-lg border border-lime-200">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-400">Mastery Level</p>
+                            <p className="text-sm text-gray-600">Mastery Level</p>
                             <div className="flex items-center gap-2">
                               <span className={`text-sm font-medium ${getMasteryLevel(evaluation.mastery).color}`}>
                                 {getMasteryLevel(evaluation.mastery).level}
                               </span>
-                              <span className="text-sm text-gray-400">
+                              <span className="text-sm text-gray-600">
                                 ({evaluation.mastery !== null && evaluation.mastery !== undefined ? `${(evaluation.mastery * 100).toFixed(1)}%` : 'N/A'})
                               </span>
                             </div>
                           </div>
-                          <Lightbulb size={16} className="text-yellow-400" />
+                          <Lightbulb size={16} className="text-lime-500" />
                         </div>
                         {evaluation.mastery_explanation && (
-                          <p className="text-xs text-gray-400 mt-1">{evaluation.mastery_explanation}</p>
+                          <p className="text-xs text-gray-600 mt-1">{evaluation.mastery_explanation}</p>
                         )}
                       </div>
                     )}
