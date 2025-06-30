@@ -520,6 +520,8 @@ export default function CurateKnowledgePage() {
     }
   };
 
+  console.log('goalRelevanceScore:', goalRelevanceScore, typeof goalRelevanceScore);
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
       {/* Sidebar Navigation */}
@@ -761,10 +763,10 @@ export default function CurateKnowledgePage() {
                 <div className="flex items-center gap-3">
                   <span className="text-lime-800 text-sm font-medium">Relevance Score:</span>
                   <span className="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold">
-                    {goalRelevanceScore === null || goalRelevanceScore === undefined ? 'N/A' : goalRelevanceScore}/10
+                    {goalRelevanceScore !== null && goalRelevanceScore !== undefined ? goalRelevanceScore : 'N/A'}/10
                   </span>
-                  {/* Priority badge */}
-                  {goalRelevanceScore && (
+                  {/* Priority badge - always show if score is a number */}
+                  {typeof goalRelevanceScore === 'number' && (
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${
                       goalRelevanceScore >= 7 ? 'bg-red-100 text-red-800' :
                       goalRelevanceScore >= 4 ? 'bg-yellow-100 text-yellow-800' :
