@@ -21,7 +21,7 @@ export default function CurateKnowledgePage() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [inputMode, setInputMode] = useState('text'); // Default to text mode
-  const [similarityThreshold, setSimilarityThreshold] = useState(0.2);
+  const [similarityThreshold, setSimilarityThreshold] = useState(0.4);
   const [isApplying, setIsApplying] = useState(false);
   const [showGoalDropdown, setShowGoalDropdown] = useState(false);
   const [userGoals, setUserGoals] = useState([]); // New state for user goals
