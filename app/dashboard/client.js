@@ -25,6 +25,7 @@ import PerformanceChart from './PerformanceChart';
 import PieChartSection from './PieChartSection';
 import LatestScores from './LatestScores';
 import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
+import { userProfileAPI } from '../../lib/supabase';
 
 
 export function DashboardView() {
@@ -90,20 +91,21 @@ export function DashboardView() {
     fetchCategoryData();
   }, []);
 
-  // Fetch goals
+  // Fetch latest goal
   useEffect(() => {
-    const fetchGoals = async () => {
+    const fetchLatestGoal = async () => {
       try {
         setGoalsLoading(true);
-        const data = await getGoals();
-        setGoals((data.goals || []).map(g => g.name));
+        const userGoals = await userProfileAPI.getUserGoals();
+        // userGoals is an array of profile objects, use the first one's goal_idea if available
+        setGoals(userGoals.length > 0 && userGoals[0].goal_idea ? [userGoals[0].goal_idea] : []);
       } catch (err) {
         setGoalsError('Failed to load goals');
       } finally {
         setGoalsLoading(false);
       }
     };
-    fetchGoals();
+    fetchLatestGoal();
   }, []);
 
   // Fetch average mastery
