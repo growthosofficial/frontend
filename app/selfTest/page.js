@@ -28,6 +28,7 @@ import {
   List,
   Zap
 } from 'lucide-react';
+import { getScoreGradientColor } from '@/utils/cn';
 
 export default function SelfTestPage() {
   const [testMode, setTestMode] = useState('free-text'); // 'free-text' or 'multiple-choice'
@@ -44,7 +45,6 @@ export default function SelfTestPage() {
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState({});
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [testId, setTestId] = useState(null);
 
   // Load categories and stats on component mount
@@ -87,7 +87,6 @@ export default function SelfTestPage() {
   const generateQuestions = async () => {
     setIsGenerating(true);
     setError('');
-    setSuccessMessage('');
 
     try {
       let data;
@@ -113,8 +112,6 @@ export default function SelfTestPage() {
       setTestCompleted(false);
       setEvaluations([]);
       setTestId(data.test_id || null);
-      
-      setSuccessMessage(`Generated ${data.total_questions} ${testMode === 'free-text' ? 'free-text' : 'multiple-choice'} questions!`);
     } catch (error) {
       setError(`Failed to generate questions: ${error.message}`);
     } finally {
@@ -163,8 +160,6 @@ export default function SelfTestPage() {
 
       setEvaluations(data.evaluations || []);
       setTestCompleted(true);
-      
-      setSuccessMessage(`Evaluation complete! You answered ${data.total_evaluated} questions.`);
     } catch (error) {
       setError(`Failed to evaluate answers: ${error.message}`);
     } finally {
@@ -180,7 +175,6 @@ export default function SelfTestPage() {
     setTestCompleted(false);
     setEvaluations([]);
     setError('');
-    setSuccessMessage('');
   };
 
   const nextQuestion = () => {
@@ -219,6 +213,7 @@ export default function SelfTestPage() {
   };
 
   const currentQuestion = questions[currentQuestionIndex];
+  console.log(evaluations)
 
   const handleCategoryClick = (categoryType, categoryName) => {
     // Show category information or filter questions
@@ -250,7 +245,7 @@ export default function SelfTestPage() {
           </div>
 
           {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="bg-white/80 backdrop-blur-lg rounded-lg p-4 border border-lime-200 shadow-sm">
                 <div className="flex items-center gap-3">
                   <BookOpen className="text-lime-500" size={20} />
@@ -266,17 +261,6 @@ export default function SelfTestPage() {
                   <div>
                     <p className="text-gray-600 text-sm">Categories</p>
                     <p className="text-gray-800 text-xl font-bold">{stats.unique_main_categories}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/80 backdrop-blur-lg rounded-lg p-4 border border-lime-200 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="text-lime-500" size={20} />
-                  <div>
-                    <p className="text-gray-600 text-sm">Avg Mastery</p>
-                    <p className="text-gray-800 text-xl font-bold">
-                      {stats.avg_strength_score ? `${(stats.avg_strength_score * 100).toFixed(1)}%` : 'N/A'}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -386,12 +370,6 @@ export default function SelfTestPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <p className="text-red-600">❌ {error}</p>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="bg-lime-50 border border-lime-200 rounded-lg p-4 mb-6">
-              <p className="text-lime-700">✅ {successMessage}</p>
             </div>
           )}
 
@@ -571,7 +549,10 @@ export default function SelfTestPage() {
                                 Question {index + 1}
                               </h3>
                               <div className="text-right">
-                                <div className={`text-2xl font-bold ${getScoreColor(evaluation.score, testMode, evaluation.is_correct)}`}>
+                                <div
+                                  className="text-2xl font-bold"
+                                  style={{ color: getScoreColor(evaluation.score / 100) }}
+                                >
                                   {evaluation.score !== null && evaluation.score !== undefined ? `${(evaluation.score * 20).toFixed(0)}%` : 'N/A'}
                                 </div>
                                 <div className="text-sm text-gray-600">
@@ -625,22 +606,24 @@ export default function SelfTestPage() {
                                 <div
                                   key={optIndex}
                                   className={`p-2 rounded ${
-                                    optIndex === evaluation.selected_index
+                                    optIndex === evaluation.selected_answer_index
                                       ? evaluation.is_correct
                                         ? 'bg-green-50 border border-green-200 text-green-800'
                                         : 'bg-red-50 border border-red-200 text-red-800'
-                                      : optIndex === evaluation.correct_answer_index
+                                      : optIndex === evaluation.correct_answer_index && !evaluation.is_correct
                                       ? 'bg-green-50 border border-green-200 text-green-800'
-                                      : 'bg-gray-100 text-gray-700'
+                                      : 'bg-gray-50 text-gray-700'
                                   }`}
                                 >
                                   <span className="font-medium mr-2">{String.fromCharCode(65 + optIndex)}.</span>
                                   {option}
                                   {optIndex === evaluation.correct_answer_index && (
-                                    <span className="ml-2 text-green-600">✓ Correct</span>
+                                    <span className="ml-2 text-green-600">✓ Correct Answer</span>
                                   )}
-                                  {optIndex === evaluation.selected_index && !evaluation.is_correct && (
-                                    <span className="ml-2 text-red-600">✗ Your Answer</span>
+                                  {optIndex === evaluation.selected_answer_index && (
+                                    <span className={`ml-2 ${evaluation.is_correct ? 'text-green-600' : 'text-red-600'}`}>
+                                      {evaluation.is_correct ? '✓ Your Answer (Correct)' : '✗ Your Answer (Incorrect)'}
+                                    </span>
                                   )}
                                 </div>
                               ))}
