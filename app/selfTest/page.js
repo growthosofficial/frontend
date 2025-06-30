@@ -28,6 +28,7 @@ import {
   List,
   Zap
 } from 'lucide-react';
+import { getScoreGradientColor } from '@/utils/cn';
 
 export default function SelfTestPage() {
   const [testMode, setTestMode] = useState('free-text'); // 'free-text' or 'multiple-choice'
@@ -571,7 +572,10 @@ export default function SelfTestPage() {
                                 Question {index + 1}
                               </h3>
                               <div className="text-right">
-                                <div className={`text-2xl font-bold ${getScoreColor(evaluation.score, testMode, evaluation.is_correct)}`}>
+                                <div
+                                  className="text-2xl font-bold"
+                                  style={{ color: getScoreGradientColor(evaluation.score / 100) }}
+                                >
                                   {evaluation.score !== null && evaluation.score !== undefined ? `${(evaluation.score * 20).toFixed(0)}%` : 'N/A'}
                                 </div>
                                 <div className="text-sm text-gray-600">
