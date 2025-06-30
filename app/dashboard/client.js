@@ -24,6 +24,7 @@ import GoalsSection from './GoalsSection';
 import PerformanceChart from './PerformanceChart';
 import PieChartSection from './PieChartSection';
 import LatestScores from './LatestScores';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
 
 
 export function DashboardView() {
@@ -111,7 +112,7 @@ export function DashboardView() {
       try {
         setMasteryLoading(true);
         setMasteryError(null);
-        const res = await fetch('http://localhost:8000/api/analytics/average-mastery');
+        const res = await fetch(API_ENDPOINTS.AVERAGE_MASTERY);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setAverageMastery(Math.round((data.average_mastery || 0) * 100));
