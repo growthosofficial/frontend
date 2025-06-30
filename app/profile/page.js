@@ -88,8 +88,8 @@ export default function ProfilePage() {
 
     return (
       <div className="flex justify-between items-center">
-        <span className="text-white/80">{label}:</span>
-        <div className="flex items-center gap-1">
+        <span className="text-gray-600 font-medium">{label}:</span>
+        <div className="flex items-center gap-2">
           {isCurrentlyEditing ? (
             <>
               <Input
@@ -101,12 +101,12 @@ export default function ProfilePage() {
                     [field]: e.target.value,
                   }))
                 }
-                className="bg-black/20 border-0 text-white text-right w-48 focus-visible:ring-0"
+                className="bg-white border-lime-200 text-gray-900 text-right w-48 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
               />
               <Button
                 onClick={() => handleSave(field)}
                 size="sm"
-                className="bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg"
+                className="bg-lime-600 hover:bg-lime-700 text-white"
               >
                 Save
               </Button>
@@ -114,21 +114,21 @@ export default function ProfilePage() {
                 onClick={() => handleCancel(field)}
                 size="sm"
                 variant="ghost"
-                className="text-white hover:bg-white/10 hover:text-white hover:shadow-lg"
+                className="text-gray-600 hover:bg-gray-100"
               >
                 Cancel
               </Button>
             </>
           ) : (
             <>
-              <span className="text-white font-medium">
+              <span className="text-gray-900 font-medium">
                 {profile[field] || 'Not set'}
               </span>
               <Button
                 onClick={() => handleEdit(field)}
                 size="sm"
                 variant="ghost"
-                className="text-white hover:bg-white/10 hover:text-white p-2"
+                className="text-gray-600 hover:bg-gray-100 p-2"
               >
                 <Edit className="w-4 h-4" />
               </Button>
@@ -141,69 +141,86 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
+        <SidebarNavigation currentPage="profile" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lime-600 mb-4 mx-auto"></div>
+            <p className="text-gray-600">Loading your profile...</p>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!profile) {
     return (
-      <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex items-center justify-center">
-        <div className="text-white text-xl">
-          No profile found. Please complete onboarding first.
+      <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
+        <SidebarNavigation currentPage="profile" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-red-800 font-medium mb-2">
+              No Profile Found
+            </h3>
+            <p className="text-red-700 text-sm">
+              No profile found. Please complete onboarding first.
+            </p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex">
+    <div className="flex h-screen bg-gradient-to-br from-white via-lime-50 to-green-100">
       {/* Sidebar Navigation */}
       <SidebarNavigation currentPage="profile" />
       
       {/* Main Content */}
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="bg-white/90 rounded-2xl p-4 mb-6 text-center">
-            <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-              <span>😊</span> User Profile
-            </h1>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">User Profile</h1>
+            <p className="text-gray-700">Manage your personal information and goals</p>
           </div>
 
           {/* Profile Content */}
-          <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
+          <div className="space-y-6">
             {/* Avatar Section */}
-            <div className="text-center mb-8">
-              <div className="relative inline-block">
-                <Avatar className="w-32 h-32 mx-auto bg-white/20">
-                  <AvatarImage src={profile.avatar_url || '/placeholder.svg'} />
-                  <AvatarFallback className="bg-white/20 text-white text-2xl">
-                    {profile.name?.charAt(0) || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <label className="absolute bottom-0 right-0 bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg p-2 rounded-full cursor-pointer">
-                  <Upload className="w-4 h-4" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </label>
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 border border-lime-100 shadow-sm">
+              <div className="text-center">
+                <div className="relative inline-block mb-4">
+                  <Avatar className="w-32 h-32 mx-auto bg-lime-100">
+                    <AvatarImage src={profile.avatar_url || '/placeholder.svg'} />
+                    <AvatarFallback className="bg-lime-100 text-lime-700 text-2xl font-bold">
+                      {profile.name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <label className="absolute bottom-0 right-0 bg-lime-600 hover:bg-lime-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <p className="text-gray-600">Change profile picture</p>
               </div>
-              <p className="text-white/80 mt-2">Change profile picture</p>
             </div>
 
             {/* About You Section */}
-            <div className="bg-black/20 rounded-2xl p-6 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-2xl">😎</div>
-                <h2 className="text-xl font-bold text-white">About you</h2>
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 border border-lime-100 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="rounded-full bg-lime-100 w-12 h-12 flex items-center justify-center">
+                  <span className="text-xl">😎</span>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">About you</h2>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {renderEditableField('Your name', 'name')}
                 {renderEditableField('Your birthday', 'birth_date', 'date')}
                 {renderEditableField('Current location', 'location')}
@@ -216,23 +233,25 @@ export default function ProfilePage() {
             </div>
 
             {/* Goals Section */}
-            <div className="bg-black/20 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-2xl">🎯</div>
-                <h2 className="text-xl font-bold text-white">Your Goal</h2>
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 border border-lime-100 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="rounded-full bg-lime-100 w-12 h-12 flex items-center justify-center">
+                  <span className="text-xl">🎯</span>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Your Goal</h2>
               </div>
 
               <div className="space-y-6">
                 {/* Goal Idea Box */}
-                <div className="bg-black/20 rounded-xl p-6 shadow-white/15 shadow-lg">
-                  <div className="flex justify-between items-start">
-                    <span></span>
+                <div className="bg-lime-50 rounded-lg p-6 border border-lime-200">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Goal Statement</h3>
                     {!isEditing.goal_idea && (
                       <Button
                         onClick={() => handleEdit('goal_idea')}
                         size="sm"
                         variant="ghost"
-                        className="text-white hover:bg-white/10 hover:text-white p-2"
+                        className="text-gray-600 hover:bg-white p-2"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -248,13 +267,13 @@ export default function ProfilePage() {
                             goal_idea: e.target.value,
                           }))
                         }
-                        className="bg-black/20 border-0 text-white min-h-[80px] focus-visible:ring-0"
+                        className="bg-white border-lime-200 text-gray-900 min-h-[100px] focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                       />
                       <div className="flex gap-2">
                         <Button
                           onClick={() => handleSave('goal_idea')}
                           size="sm"
-                          className="bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg"
+                          className="bg-lime-600 hover:bg-lime-700 text-white"
                         >
                           Save
                         </Button>
@@ -262,83 +281,149 @@ export default function ProfilePage() {
                           onClick={() => handleCancel('goal_idea')}
                           size="sm"
                           variant="ghost"
-                          className="text-white hover:bg-white/10 hover:text-white hover:shadow-lg"
+                          className="text-gray-600 hover:bg-gray-100"
                         >
                           Cancel
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex justify-center items-center pb-8">
-                      <h2 className="text-white font-bold text-xl">
+                    <div className="text-center py-4">
+                      <p className="text-gray-900 font-medium text-lg">
                         {profile.goal_idea || 'Not set'}
-                      </h2>
+                      </p>
                     </div>
                   )}
                 </div>
 
-                {/* Goal Domain Box */}
-                <div className="bg-black/20 rounded-xl p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-white font-semibold">Domain:</h3>
-                    {!isEditing.goal_domain && (
-                      <Button
-                        onClick={() => handleEdit('goal_domain')}
-                        size="sm"
-                        variant="ghost"
-                        className="text-white hover:bg-white/10 hover:text-white p-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {isEditing.goal_domain ? (
-                    <div className="space-y-3">
-                      <Input
-                        value={editValues.goal_domain || ''}
-                        onChange={(e) =>
-                          setEditValues((prev) => ({
-                            ...prev,
-                            goal_domain: e.target.value,
-                          }))
-                        }
-                        className="bg-black/20 border-0 text-white focus-visible:ring-0"
-                      />
-                      <div className="flex gap-2">
+                {/* Goal Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Goal Domain Box */}
+                  <div className="bg-lime-50 rounded-lg p-4 border border-lime-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-gray-900 font-semibold">Domain:</h3>
+                      {!isEditing.goal_domain && (
                         <Button
-                          onClick={() => handleSave('goal_domain')}
-                          size="sm"
-                          className="bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg"
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          onClick={() => handleCancel('goal_domain')}
+                          onClick={() => handleEdit('goal_domain')}
                           size="sm"
                           variant="ghost"
-                          className="text-white hover:bg-white/10 hover:text-white hover:shadow-lg"
+                          className="text-gray-600 hover:bg-white p-2"
                         >
-                          Cancel
+                          <Edit className="w-4 h-4" />
                         </Button>
-                      </div>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-white/80">
-                      {profile.goal_domain || 'Not set'}
-                    </p>
-                  )}
+                    {isEditing.goal_domain ? (
+                      <div className="space-y-3">
+                        <Input
+                          value={editValues.goal_domain || ''}
+                          onChange={(e) =>
+                            setEditValues((prev) => ({
+                              ...prev,
+                              goal_domain: e.target.value,
+                            }))
+                          }
+                          className="bg-white border-lime-200 text-gray-900 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleSave('goal_domain')}
+                            size="sm"
+                            className="bg-lime-600 hover:bg-lime-700 text-white"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            onClick={() => handleCancel('goal_domain')}
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-600 hover:bg-gray-100"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-700">
+                        {profile.goal_domain || 'Not set'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Target Date Box */}
+                  <div className="bg-lime-50 rounded-lg p-4 border border-lime-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-gray-900 font-semibold">Target Date:</h3>
+                      {!isEditing.goal_prospective_achieve_date && (
+                        <Button
+                          onClick={() =>
+                            handleEdit('goal_prospective_achieve_date')
+                          }
+                          size="sm"
+                          variant="ghost"
+                          className="text-gray-600 hover:bg-white p-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {isEditing.goal_prospective_achieve_date ? (
+                      <div className="space-y-3">
+                        <Input
+                          type="date"
+                          value={editValues.goal_prospective_achieve_date || ''}
+                          onChange={(e) =>
+                            setEditValues((prev) => ({
+                              ...prev,
+                              goal_prospective_achieve_date: e.target.value,
+                            }))
+                          }
+                          className="bg-white border-lime-200 text-gray-900 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() =>
+                              handleSave('goal_prospective_achieve_date')
+                            }
+                            size="sm"
+                            className="bg-lime-600 hover:bg-lime-700 text-white"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              handleCancel('goal_prospective_achieve_date')
+                            }
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-600 hover:bg-gray-100"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-700">
+                        {profile.goal_prospective_achieve_date
+                          ? new Date(
+                              profile.goal_prospective_achieve_date,
+                            ).toLocaleDateString()
+                          : 'Not set'}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Goal Reason Box */}
-                <div className="bg-black/20 rounded-xl p-4">
+                <div className="bg-lime-50 rounded-lg p-4 border border-lime-200">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-white font-semibold">Why:</h3>
+                    <h3 className="text-gray-900 font-semibold">Why this goal matters:</h3>
                     {!isEditing.goal_reason && (
                       <Button
                         onClick={() => handleEdit('goal_reason')}
                         size="sm"
                         variant="ghost"
-                        className="text-white hover:bg-white/10 hover:text-white p-2"
+                        className="text-gray-600 hover:bg-white p-2"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -354,13 +439,13 @@ export default function ProfilePage() {
                             goal_reason: e.target.value,
                           }))
                         }
-                        className="bg-black/20 border-0 text-white min-h-[80px] focus-visible:ring-0"
+                        className="bg-white border-lime-200 text-gray-900 min-h-[100px] focus:ring-2 focus:ring-lime-400 focus:border-transparent"
                       />
                       <div className="flex gap-2">
                         <Button
                           onClick={() => handleSave('goal_reason')}
                           size="sm"
-                          className="bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg"
+                          className="bg-lime-600 hover:bg-lime-700 text-white"
                         >
                           Save
                         </Button>
@@ -368,100 +453,20 @@ export default function ProfilePage() {
                           onClick={() => handleCancel('goal_reason')}
                           size="sm"
                           variant="ghost"
-                          className="text-white hover:bg-white/10 hover:text-white hover:shadow-lg"
+                          className="text-gray-600 hover:bg-gray-100"
                         >
                           Cancel
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-white/80">
+                    <p className="text-gray-700">
                       {profile.goal_reason || 'Not set'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Target Date Box */}
-                <div className="bg-black/20 rounded-xl p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-white font-semibold">Target Date:</h3>
-                    {!isEditing.goal_prospective_achieve_date && (
-                      <Button
-                        onClick={() =>
-                          handleEdit('goal_prospective_achieve_date')
-                        }
-                        size="sm"
-                        variant="ghost"
-                        className="text-white hover:bg-white/10 hover:text-white p-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {isEditing.goal_prospective_achieve_date ? (
-                    <div className="space-y-3">
-                      <Input
-                        type="date"
-                        value={editValues.goal_prospective_achieve_date || ''}
-                        onChange={(e) =>
-                          setEditValues((prev) => ({
-                            ...prev,
-                            goal_prospective_achieve_date: e.target.value,
-                          }))
-                        }
-                        className="bg-black/20 border-0 text-white focus-visible:ring-0"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() =>
-                            handleSave('goal_prospective_achieve_date')
-                          }
-                          size="sm"
-                          className="bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg"
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          onClick={() =>
-                            handleCancel('goal_prospective_achieve_date')
-                          }
-                          size="sm"
-                          variant="ghost"
-                          className="text-white hover:bg-white/10 hover:text-white hover:shadow-lg"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-white/80">
-                      {profile.goal_prospective_achieve_date
-                        ? new Date(
-                            profile.goal_prospective_achieve_date,
-                          ).toLocaleDateString()
-                        : 'Not set'}
                     </p>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Additional Info Section */}
-            {/* <div className="bg-black/20 rounded-2xl p-6 mt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-2xl">🎯</div>
-                <h2 className="text-xl font-bold text-white">
-                  Anything else to know about you
-                </h2>
-              </div>
-
-              <Textarea
-                placeholder="Interests, values, or preferences to keep in mind"
-                className="bg-black/20 border-0 text-white placeholder:text-white/50 min-h-[100px] resize-none"
-              />
-            </div> */}
-
-            <div className="mb-10"></div>
           </div>
         </div>
       </div>
