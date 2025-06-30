@@ -27,9 +27,7 @@ import {
   Lightbulb,
   FileText,
   List,
-  Zap,
-  Wifi,
-  WifiOff
+  Zap
 } from 'lucide-react';
 
 export default function SelfTestPage() {
@@ -260,37 +258,9 @@ export default function SelfTestPage() {
             <div className="flex items-center gap-3 mb-4">
               <Brain size={32} className="text-lime-500" />
               <h1 className="text-3xl font-bold text-gray-800">Self Test</h1>
-              <div className="flex items-center gap-2 ml-auto">
-                {backendStatus === 'connected' ? (
-                  <div className="flex items-center gap-1 text-lime-600">
-                    <Wifi size={16} />
-                    <span className="text-sm">Connected</span>
-                  </div>
-                ) : backendStatus === 'disconnected' ? (
-                  <div className="flex items-center gap-1 text-red-500">
-                    <WifiOff size={16} />
-                    <span className="text-sm">Disconnected</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-yellow-600">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
-                    <span className="text-sm">Checking...</span>
-                  </div>
-                )}
-              </div>
             </div>
             <p className="text-gray-600">Test your knowledge and track your mastery progress</p>
           </div>
-
-          {/* Backend Status Warning */}
-          {backendStatus === 'disconnected' && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center gap-2">
-                <WifiOff size={20} className="text-red-500" />
-                <p className="text-red-600">Backend is not available. Some features may not work properly.</p>
-              </div>
-            </div>
-          )}
 
           {/* Stats Overview */}
           {stats && backendStatus === 'connected' && (

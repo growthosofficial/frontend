@@ -69,11 +69,6 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="flex gap-1">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <div className="w-3 h-3 bg-lime-500 rounded-full"></div>
-            </div>
             <Brain size={32} className="text-lime-500" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">GrowthOS</h1>
