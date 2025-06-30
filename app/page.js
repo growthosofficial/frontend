@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, User, Lock, ArrowRight } from 'lucide-react';
+import BoltBadge from '../components/BoltBadge';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -73,6 +74,11 @@ export default function LoginPage() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">GrowthOS</h1>
           <p className="text-gray-600">Your Second Brain for Knowledge Management</p>
+          
+          {/* Inline Bolt Badge */}
+          <div className="mt-4 flex justify-center">
+            <BoltBadge variant="inline" showDetails={false} />
+          </div>
         </div>
 
         {/* Login Form */}
@@ -184,6 +190,11 @@ export default function LoginPage() {
               <span>🤖</span>
               <span>AI Agents</span>
             </div>
+          </div>
+          
+          {/* Footer Bolt Badge */}
+          <div className="mt-6">
+            <BoltBadge variant="footer" showDetails={false} />
           </div>
         </div>
       </div>

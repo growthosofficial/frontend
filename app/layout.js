@@ -1,9 +1,10 @@
 import './globals.css'
 import { Montserrat, Inter } from 'next/font/google'
+import BoltBadge from '../components/BoltBadge'
 
 export const metadata = {
   title: 'Second Brain - Knowledge Management System',
-  description: 'AI-powered knowledge management and organization system',
+  description: 'AI-powered knowledge management and organization system built with Bolt',
 }
 
 const montserrat = Montserrat({
@@ -23,6 +24,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${montserrat.variable} ${inter.variable} antialiased`}>
         {children}
+        {/* Bolt Badge - Floating certification badge */}
+        <BoltBadge variant="floating" showDetails={true} />
       </body>
     </html>
   )

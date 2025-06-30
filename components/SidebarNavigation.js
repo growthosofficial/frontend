@@ -17,6 +17,7 @@ import {
   X,
   LayoutDashboard
 } from "lucide-react"
+import BoltBadge from "./BoltBadge"
 
 export default function SidebarNavigation({ currentPage = "knowledge" }) {
   const [isExpanded, setIsExpanded] = useState(true)
@@ -167,6 +168,11 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
                 <span>Onboarding</span>
               </Link>
             </div>
+
+            {/* Mobile Bolt Badge */}
+            <div className="p-4 border-t border-lime-100">
+              <BoltBadge variant="footer" showDetails={false} />
+            </div>
           </div>
         </aside>
       </>
@@ -254,6 +260,17 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
             <Grid3X3 size={18} className="text-lime-600 flex-shrink-0" />
             {isExpanded && <span>Onboarding</span>}
           </Link>
+        </div>
+
+        {/* Desktop Bolt Badge */}
+        <div className="p-4 border-t border-lime-100 flex-shrink-0">
+          {isExpanded ? (
+            <BoltBadge variant="footer" showDetails={false} />
+          ) : (
+            <div className="flex justify-center">
+              <BoltBadge variant="inline" showDetails={false} />
+            </div>
+          )}
         </div>
       </aside>
     </>
