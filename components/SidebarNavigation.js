@@ -170,7 +170,7 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
               
               {/* Inline Bolt Badge for mobile */}
               <div className="flex justify-center">
-                <BoltBadgePresets.InlineMinimal />
+                <BoltBadgePresets.InlineSmall />
               </div>
             </div>
           </div>
@@ -264,7 +264,7 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
           {/* Inline Bolt Badge for desktop sidebar */}
           {isExpanded && (
             <div className="flex justify-center">
-              <BoltBadgePresets.InlineMinimal />
+              <BoltBadgePresets.InlineSmall />
             </div>
           )}
         </div>
