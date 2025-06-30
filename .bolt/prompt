@@ -1,5 +1,127 @@
-For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+# GrowthOS - AI-Powered Knowledge Management System
 
-By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+## Project Overview
+GrowthOS is a sophisticated knowledge management and learning platform that combines AI-powered content curation, self-testing capabilities, and goal-oriented learning. The application features a modern, production-ready interface with comprehensive user onboarding, profile management, and intelligent knowledge organization.
 
-Use icons from lucide-react for logos.
+## Technology Stack & Dependencies
+
+### Core Framework
+- **Next.js 15.3.3** - React framework with App Router
+- **React 18.3.1** - UI library with hooks and modern patterns
+- **React DOM 18.3.1** - DOM rendering
+
+### UI & Styling
+- **Tailwind CSS 3.1.10** - Utility-first CSS framework
+- **tailwindcss-animate 1.0.7** - Animation utilities
+- **Radix UI Components**:
+  - `@radix-ui/react-avatar` - Avatar component primitives
+  - `@radix-ui/react-slot` - Slot component for composition
+- **Lucide React 0.515.0** - Icon library (primary icon source)
+- **class-variance-authority 0.7.1** - CVA for component variants
+- **clsx 2.1.1** - Conditional className utility
+- **tailwind-merge 3.3.1** - Tailwind class merging
+
+### Data & Backend Integration
+- **Supabase 2.50.0** - Database, authentication, and real-time features
+- **OpenAI 4.104.0** - AI/LLM integration for embeddings and text processing
+
+### Content Processing & Visualization
+- **react-markdown 8.0.7** - Markdown rendering
+- **recharts 3.0.2** - Data visualization and charts
+- **formidable 2.1.1** - File upload handling
+- **mammoth 1.7.0** - DOCX file processing
+- **pdf-parse 1.1.1** - PDF file processing
+
+### Development & Quality
+- **ESLint 9** with Next.js config - Code linting
+- **Autoprefixer 10.4.21** - CSS vendor prefixing
+- **PostCSS 8.5.5** - CSS processing
+
+## Architecture Patterns
+
+### File Organization
+- **App Router Structure** - Next.js 13+ app directory pattern
+- **Component-Based Architecture** - Reusable UI components
+- **API Routes** - Serverless functions in `/app/api/`
+- **Modular Libraries** - Organized in `/lib/` directory
+- **Utility Functions** - Helper functions in `/utils/`
+
+### Key Components & Features
+- **SidebarNavigation** - Responsive navigation with mobile support
+- **BoltBadge** - Certification badge with multiple variants
+- **Dashboard Analytics** - Charts and data visualization
+- **Knowledge Management** - CRUD operations with AI processing
+- **Self-Testing System** - Multiple choice and free-text questions
+- **User Profiles** - Complete onboarding and profile management
+- **File Upload** - Support for .txt, .md, PDF, and DOCX files
+
+### State Management
+- **React Hooks** - useState, useEffect, custom hooks
+- **Local Storage** - Client-side data persistence
+- **Supabase Real-time** - Live data synchronization
+
+### Styling Approach
+- **Gradient Backgrounds** - `bg-gradient-to-br from-white via-lime-50 to-green-100`
+- **Glass Morphism** - `bg-white/90 backdrop-blur-sm`
+- **Lime Color Scheme** - Primary brand colors using lime variants
+- **Responsive Design** - Mobile-first approach with breakpoints
+- **Animation & Transitions** - Smooth hover effects and micro-interactions
+
+### API Integration
+- **RESTful APIs** - Standard HTTP methods
+- **Serverless Functions** - Next.js API routes
+- **External AI Services** - Azure OpenAI integration
+- **Database Operations** - Supabase client-side SDK
+
+## Design System
+
+### Color Palette
+- **Primary**: Lime variants (lime-50 to lime-900)
+- **Secondary**: Gray variants for text and borders
+- **Accent**: Green variants for success states
+- **Error**: Red variants for error states
+
+### Typography
+- **Headings**: Montserrat font family
+- **Body Text**: Inter font family
+- **Font Weights**: 400 (normal), 600 (semibold), 700 (bold)
+
+### Component Patterns
+- **Cards**: Rounded corners with subtle shadows
+- **Buttons**: Multiple variants (default, ghost, outline)
+- **Forms**: Consistent input styling with focus states
+- **Navigation**: Collapsible sidebar with responsive behavior
+
+## Development Guidelines
+
+### Code Style
+- **JSX Syntax** - React components with modern patterns
+- **ES6+ Features** - Arrow functions, destructuring, async/await
+- **Modular Imports** - Organized import statements
+- **Error Handling** - Comprehensive try-catch blocks
+
+### Performance Considerations
+- **Image Optimization** - Next.js Image component
+- **Code Splitting** - Dynamic imports where appropriate
+- **Caching Strategies** - API response caching
+- **Bundle Optimization** - Tree shaking and minification
+
+### Accessibility
+- **ARIA Labels** - Proper accessibility attributes
+- **Keyboard Navigation** - Tab order and focus management
+- **Color Contrast** - WCAG compliant color combinations
+- **Screen Reader Support** - Semantic HTML structure
+
+## Environment Configuration
+- **Environment Variables** - `.env` file for sensitive data
+- **Supabase Configuration** - Database and API keys
+- **OpenAI Integration** - AI service credentials
+- **Development/Production** - Environment-specific settings
+
+## Build & Deployment
+- **Next.js Build** - Optimized production builds
+- **Static Assets** - Public directory for images and files
+- **Serverless Deployment** - Compatible with Vercel, Netlify
+- **Database Migrations** - Supabase schema management
+
+This project represents a production-ready, full-stack application with modern development practices, comprehensive error handling, and a polished user experience suitable for enterprise use.
