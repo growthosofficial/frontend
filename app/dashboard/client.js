@@ -6,6 +6,7 @@ import { getTests, getMainCategoryDistribution, getGoals } from '../../lib/api';
 import {
   ChevronRight,
   PresentationChart,
+  BookOpen,
 } from 'lucide-react';
 import {
   LineChart,
@@ -38,13 +39,16 @@ export function DashboardView() {
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
   const [goalsError, setGoalsError] = useState(null);
+  const [averageMastery, setAverageMastery] = useState(null);
+  const [masteryLoading, setMasteryLoading] = useState(true);
+  const [masteryError, setMasteryError] = useState(null);
 
   // Fetch test data on component mount
   useEffect(() => {
     const fetchTestData = async () => {
       try {
         setLoading(true);
-        const data = await getTests("limit=7&sort_order=desc");
+        const data = await getTests("limit=5&sort_order=desc");
         setPieChartTestData(data.tests || []);
       } catch (err) {
         console.error('Failed to fetch test data:', err);
@@ -101,6 +105,25 @@ export function DashboardView() {
     fetchGoals();
   }, []);
 
+  // Fetch average mastery
+  useEffect(() => {
+    const fetchAverageMastery = async () => {
+      try {
+        setMasteryLoading(true);
+        setMasteryError(null);
+        const res = await fetch('http://localhost:8000/api/analytics/average-mastery');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        setAverageMastery(Math.round((data.average_mastery || 0) * 100));
+      } catch (err) {
+        setMasteryError('Failed to load average mastery');
+      } finally {
+        setMasteryLoading(false);
+      }
+    };
+    fetchAverageMastery();
+  }, []);
+
   // Transform test data for display
   const latestScores = pieChartTestData.map(test => ({
     subject: test.category || 'All Categories',
@@ -145,11 +168,30 @@ export function DashboardView() {
               loading={categoryLoading}
               error={categoryError}
             />
-            <LatestScores
-              latestScores={latestScores}
-              loading={loading}
-              error={error}
-            />
+            <div>
+              <div className="relative bg-white rounded-xl p-6 mb-4 shadow-sm border border-lime-100 flex items-center justify-between">
+                <div className="flex flex-col items-start justify-center">
+                  <span className="text-5xl font-extrabold text-lime-600 leading-none">
+                    {masteryLoading ? (
+                      <span className="text-gray-400 text-3xl">...</span>
+                    ) : masteryError ? (
+                      <span className="text-red-500 text-lg">Err</span>
+                    ) : (
+                      <>{averageMastery}%</>
+                    )}
+                  </span>
+                  <span className="text-base text-gray-500 font-medium mt-2">Mastery Score</span>
+                </div>
+                <div className="flex flex-col items-end justify-between h-full">
+                  <BookOpen className="w-10 h-10 text-gray-300 mb-2" />
+                </div>
+              </div>
+              <LatestScores
+                latestScores={latestScores}
+                loading={loading}
+                error={error}
+              />
+            </div>
           </div>
         </div>
       </div>
