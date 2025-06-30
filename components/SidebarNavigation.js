@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Settings,
   ChevronLeft,
@@ -12,22 +12,57 @@ import {
   Folder,
   User2,
   BookOpen,
-  Grid3X3
+  Grid3X3,
+  Menu,
+  X
 } from "lucide-react"
 
 export default function SidebarNavigation({ currentPage = "knowledge" }) {
   const [isExpanded, setIsExpanded] = useState(true)
-  const toggleSidebar = () => setIsExpanded(v => !v)
+  const [isMobile, setIsMobile] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
+
+  // Handle responsive behavior
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (mobile) {
+        setIsExpanded(false)
+        setIsMobileOpen(false)
+      } else {
+        setIsExpanded(true)
+      }
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  const toggleSidebar = () => {
+    if (isMobile) {
+      setIsMobileOpen(!isMobileOpen)
+    } else {
+      setIsExpanded(!isExpanded)
+    }
+  }
+
+  const closeMobileMenu = () => {
+    if (isMobile) {
+      setIsMobileOpen(false)
+    }
+  }
 
   const sections = [
     {
       title: "Favorites",
       items: [
-        { href: "/profile", icon: <User2 size={16} />, label: "User" },
+        { href: "/profile", icon: <User2 size={18} />, label: "Profile" },
         {
           href: "/knowledge",
-          icon: <BookOpen size={16} />,
-          label: "Knowledge List",
+          icon: <BookOpen size={18} />,
+          label: "Knowledge",
           active: currentPage === "knowledge"
         },
       ]
@@ -37,20 +72,20 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
       items: [
         {
           href: "/curate",
-          icon: <Search size={16} />,
-          label: "Curate Knowledge",
+          icon: <Search size={18} />,
+          label: "Curate",
           active: currentPage === "curate"
         },
         {
           href: "/selfTest",
-          icon: <Pencil size={16} />,
+          icon: <Pencil size={18} />,
           label: "Self Test",
           active: currentPage === "test"
         },
         {
           href: "/agents",
-          icon: <Bot size={16} />,
-          label: "Deploy Agents",
+          icon: <Bot size={18} />,
+          label: "Agents",
           active: currentPage === "agents"
         }
       ]
@@ -60,99 +95,172 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
       items: [
         ...[1, 2, 3].map(n => ({
           href: `/workspace/${n}`,
-          icon: <Folder size={16} />,
+          icon: <Folder size={18} />,
           label: `Workspace ${n}`
         })),
         {
           href: "/workspace/new",
-          icon: <FolderPlus size={16} />,
-          label: "Add Workspace",
+          icon: <FolderPlus size={18} />,
+          label: "New Workspace",
           dark: true
         }
       ]
     }
   ]
 
-  return (
-    <aside
-      className={`
-        relative flex flex-col transition-all duration-300
-        h-screen p-3
-        ${isExpanded ? "w-64" : "w-16"}
-        bg-white/30 backdrop-blur-md shadow-xl
-      `}
-    >
-      {/* Header */}
-      <div
-        className={`flex items-center h-12 px-4 border-b border-white
-          ${isExpanded ? "justify-between" : "justify-center"}`}
-      >
-        {/* Left: title & action icons only when expanded */}
-        {isExpanded && (
-          <>
-            <h1 className="text-lg font-bold text-lime-300">GrowthOS</h1>
-            <div className="flex gap-1">
-              <button className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition">
-                <Settings size={16} className="text-white" />
-              </button>
-              <button className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition">
-                <HelpCircle size={16} className="text-white" />
+  // Mobile overlay
+  if (isMobile && isMobileOpen) {
+    return (
+      <>
+        {/* Mobile overlay */}
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={closeMobileMenu}
+        />
+        
+        {/* Mobile sidebar */}
+        <aside className="fixed left-0 top-0 h-full w-72 bg-white/95 backdrop-blur-xl shadow-2xl z-50 lg:hidden transform transition-transform duration-300">
+          <div className="flex flex-col h-full">
+            {/* Mobile Header */}
+            <div className="flex items-center justify-between p-4 border-b border-lime-200">
+              <h1 className="text-xl font-bold text-lime-500">GrowthOS</h1>
+              <button
+                onClick={closeMobileMenu}
+                className="p-2 rounded-lg hover:bg-lime-50 transition-colors"
+              >
+                <X size={20} className="text-gray-600" />
               </button>
             </div>
-          </>
-        )}
 
-        {/* Toggle: always rendered, placed by the flex container */}
+            {/* Mobile Navigation */}
+            <nav className="flex-1 overflow-y-auto p-4">
+              {sections.map(({ title, items }) => (
+                <NavSection
+                  key={title}
+                  title={title}
+                  items={items}
+                  isExpanded={true}
+                  onItemClick={closeMobileMenu}
+                />
+              ))}
+            </nav>
+
+            {/* Mobile Onboarding */}
+            <div className="p-4 border-t border-lime-200">
+              <Link
+                href="/onboarding"
+                onClick={closeMobileMenu}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-lime-100 text-lime-700 hover:bg-lime-200 transition-colors font-medium"
+              >
+                <Grid3X3 size={18} className="text-lime-600" />
+                <span>Onboarding</span>
+              </Link>
+            </div>
+          </div>
+        </aside>
+      </>
+    )
+  }
+
+  return (
+    <>
+      {/* Mobile menu button */}
+      {isMobile && (
         <button
           onClick={toggleSidebar}
-          className="bg-white/20 rounded-full p-1 hover:bg-white/30 transition"
-          title={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          className="fixed top-4 left-4 z-30 p-2 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg lg:hidden"
         >
-          {isExpanded ? <ChevronLeft size={16} className="text-white" /> : <ChevronRight size={16} className="text-white" />}
+          <Menu size={20} className="text-gray-700" />
         </button>
-      </div>
+      )}
 
-      {/* Navigation Sections */}
-      <nav className="mt-4 flex-1 overflow-y-auto">
-        {sections.map(({ title, items }) => (
-          <NavSection
-            key={title}
-            title={title}
-            items={items}
-            isExpanded={isExpanded}
-          />
-        ))}
-      </nav>
+      {/* Desktop sidebar */}
+      <aside
+        className={`
+          hidden lg:flex flex-col transition-all duration-300 ease-in-out
+          h-screen overflow-hidden
+          ${isExpanded ? "w-72" : "w-20"}
+          bg-white/95 backdrop-blur-xl shadow-xl
+        `}
+      >
+        {/* Header */}
+        <div className="flex items-center h-16 px-4 border-b border-lime-200 flex-shrink-0">
+          {isExpanded ? (
+            <div className="flex items-center justify-between w-full">
+              <h1 className="text-xl font-bold text-lime-500">GrowthOS</h1>
+              <div className="flex gap-1">
+                <button className="p-2 rounded-lg hover:bg-lime-50 transition-colors">
+                  <Settings size={18} className="text-gray-600" />
+                </button>
+                <button className="p-2 rounded-lg hover:bg-lime-50 transition-colors">
+                  <HelpCircle size={18} className="text-gray-600" />
+                </button>
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 rounded-lg hover:bg-lime-50 transition-colors"
+                  title="Collapse sidebar"
+                >
+                  <ChevronLeft size={18} className="text-gray-600" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center w-full">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-lg hover:bg-lime-50 transition-colors"
+                title="Expand sidebar"
+              >
+                <ChevronRight size={18} className="text-gray-600" />
+              </button>
+            </div>
+          )}
+        </div>
 
-      {/* Onboarding Button at Bottom */}
-      <div className="mt-auto pt-4 flex justify-center">
-        <Link
-          href="/onboarding"
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-lime-100 text-lime-700 hover:bg-lime-200 transition-colors text-xs font-semibold shadow"
-          title="Go to Onboarding"
-        >
-          <Grid3X3 size={16} className="text-lime-500" />
-          {isExpanded && <span>Onboarding</span>}
-        </Link>
-      </div>
-    </aside>
+        {/* Navigation Sections */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+          {sections.map(({ title, items }) => (
+            <NavSection
+              key={title}
+              title={title}
+              items={items}
+              isExpanded={isExpanded}
+            />
+          ))}
+        </nav>
+
+        {/* Onboarding Button */}
+        <div className="p-4 border-t border-lime-200 flex-shrink-0">
+          <Link
+            href="/onboarding"
+            className={`
+              flex items-center gap-3 px-4 py-3 rounded-xl bg-lime-100 text-lime-700 
+              hover:bg-lime-200 transition-colors font-medium
+              ${!isExpanded && "justify-center"}
+            `}
+            title={!isExpanded ? "Onboarding" : undefined}
+          >
+            <Grid3X3 size={18} className="text-lime-600 flex-shrink-0" />
+            {isExpanded && <span>Onboarding</span>}
+          </Link>
+        </div>
+      </aside>
+    </>
   )
 }
 
-function NavSection({ title, items, isExpanded }) {
+function NavSection({ title, items, isExpanded, onItemClick }) {
   return (
-    <section className="mb-4">
-      <div className="border-b border-white pt-0 pb-4">
-        {isExpanded && (
-          <div className="pb-2">
-            <h3 className="text-white/80 text-sm font-medium">{title}</h3>
-          </div>
-        )}
-        <div className="flex flex-col space-y-3">
-          {items.map(item => (
-            <NavItem key={item.label} {...item} isExpanded={isExpanded} />
-          ))}
-        </div>
+    <section className="mb-6 last:mb-0">
+      <div className="space-y-1">
+        {items.map(item => (
+          <NavItem 
+            key={item.label} 
+            {...item} 
+            isExpanded={isExpanded}
+            onClick={onItemClick}
+          />
+        ))}
       </div>
     </section>
   )
@@ -164,33 +272,48 @@ function NavItem({
   label,
   isExpanded,
   active = false,
-  dark = false
+  dark = false,
+  customStyle,
+  onClick
 }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`
-        flex items-center justify-between px-3 py-2 rounded-xl h-10 transition-all
+        flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+        group relative overflow-hidden min-w-0
         ${
-          dark
-            ? "bg-gray-800 text-white hover:bg-gray-700"
-            : "bg-white text-gray-800 hover:bg-gray-100"
+          customStyle
+            ? ""
+            : dark
+            ? "bg-lime-600 text-white hover:bg-lime-700"
+            : active
+            ? "bg-lime-50 text-lime-700 border border-lime-200"
+            : "text-gray-700 hover:bg-lime-50 hover:text-gray-900"
         }
-        ${active && !dark ? "ring-2 ring-blue-500" : ""}
-        ${active && dark ? "ring-2 ring-white" : ""}
+        ${!isExpanded && "justify-center"}
       `}
+      style={customStyle}
       aria-current={active ? "page" : undefined}
       title={!isExpanded ? label : undefined}
     >
-      <div className="flex items-center gap-2">
-        <div className={dark ? "text-white" : "text-gray-600"}>
+      {/* Active indicator */}
+      {active && isExpanded && !customStyle && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-lime-500 rounded-r-full" />
+      )}
+      
+      <div className={`
+        flex items-center gap-3 min-w-0 flex-1
+        ${customStyle ? "text-white" : dark ? "text-white" : active ? "text-lime-600" : "text-gray-600 group-hover:text-gray-700"}
+      `}>
+        <div className="flex-shrink-0">
           {icon}
         </div>
-        {isExpanded && <span className="truncate w-full">{label}</span>}
+        {isExpanded && (
+          <span className="font-medium text-sm truncate">{label}</span>
+        )}
       </div>
-      {isExpanded && (
-        <ChevronRight size={16} className={`${dark ? "text-gray-400" : "text-gray-400"} transform rotate-90`} />
-      )}
     </Link>
   )
 }
