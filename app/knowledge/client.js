@@ -5,6 +5,7 @@ import { knowledgeAPI } from "../../lib/supabase";
 import SidebarNavigation from "../../components/SidebarNavigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { useSearchParams } from 'next/navigation';
 
 // Individual knowledge item card within a subcategory
 const KnowledgeItemCard = ({ item }) => {
@@ -202,13 +203,24 @@ const MainCategoryCard = ({ mainCategory, data, isExpanded, onToggle }) => {
   );
 };
 
-export function OrganizedKnowledgeView({ searchParams }) {
+export function OrganizedKnowledgeView() {
   const [knowledgeItems, setKnowledgeItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
   const [expandedCategories, setExpandedCategories] = useState(new Set());
-  const [searchTerm, setSearchTerm] = useState(searchParams?.q || "");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Use Next.js hook to get search params in client component
+  const searchParams = useSearchParams();
+  
+  // Initialize search term from URL params
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) {
+      setSearchTerm(q);
+    }
+  }, [searchParams]);
 
   // Fetch knowledge items
   useEffect(() => {
@@ -413,4 +425,4 @@ export function OrganizedKnowledgeView({ searchParams }) {
       </div>
     </div>
   );
-} 
+}

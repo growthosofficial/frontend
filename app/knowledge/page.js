@@ -1,5 +1,8 @@
 import { OrganizedKnowledgeView } from './client';
 
 export default function KnowledgePage({ searchParams }) {
-  return <OrganizedKnowledgeView searchParams={searchParams} />;
-  }
+  // Convert searchParams to a plain object to avoid the Next.js bug
+  const searchParamsObject = searchParams ? { ...searchParams } : {};
+  
+  return <OrganizedKnowledgeView searchParams={searchParamsObject} />;
+}
