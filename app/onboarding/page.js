@@ -70,7 +70,7 @@ export default function OnboardingPage() {
     goal_period: '',
     goal_prospective_achieve_date: '',
   })
-
+  const [formErrors, setFormErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
 
@@ -78,9 +78,67 @@ export default function OnboardingPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const validateStep = (step) => {
+    const errors = {}
+    
+    switch (step) {
+      case 0:
+        if (!formData.name.trim()) {
+          errors.name = 'Name is required'
+        }
+        if (!formData.birth_date) {
+          errors.birth_date = 'Birth date is required'
+        }
+        if (!formData.location.trim()) {
+          errors.location = 'Location is required'
+        }
+        if (!formData.working_role.trim()) {
+          errors.working_role = 'Working role is required'
+        }
+        if (!formData.working_industry.trim()) {
+          errors.working_industry = 'Working industry is required'
+        }
+        break
+      
+      case 1:
+        if (!formData.goal_idea.trim()) {
+          errors.goal_idea = 'Please describe your goal'
+        } else if (formData.goal_idea.trim().length < 10) {
+          errors.goal_idea = 'Goal description should be at least 10 characters'
+        }
+        break
+      
+      case 2:
+        if (!formData.goal_domain) {
+          errors.goal_domain = 'Please select a goal domain'
+        }
+        break
+      
+      case 3:
+        if (!formData.goal_reason.trim()) {
+          errors.goal_reason = 'Please explain why this goal is important to you'
+        } else if (formData.goal_reason.trim().length < 10) {
+          errors.goal_reason = 'Explanation should be at least 10 characters'
+        }
+        break
+      
+      case 4:
+        if (!formData.goal_prospective_achieve_date) {
+          errors.goal_prospective_achieve_date = 'Please select or enter a target date'
+        }
+        break
+    }
+    
+    return errors
+  }
+
   const nextStep = () => {
-    if (currentStep < STEPS.length - 1) {
+    const errors = validateStep(currentStep)
+    setFormErrors(errors)
+    
+    if (Object.keys(errors).length === 0 && currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1)
+      setFormErrors({})
     }
   }
   const prevStep = () => {
@@ -135,6 +193,12 @@ export default function OnboardingPage() {
     </div>
   )
 
+  const renderErrorMessage = (field) => {
+    return formErrors[field] ? (
+      <p className="text-red-500 text-sm mt-1">{formErrors[field]}</p>
+    ) : null
+  }
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
@@ -163,8 +227,11 @@ export default function OnboardingPage() {
                   placeholder="Example: Chris"
                   value={formData.name}
                   onChange={(e) => updateFormData('name', e.target.value)}
-                  className="bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                  className={`bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent ${
+                    formErrors.name ? 'border-red-500' : ''
+                  }`}
                 />
+                {renderErrorMessage('name')}
               </div>
 
               <div>
@@ -176,8 +243,11 @@ export default function OnboardingPage() {
                   type="date"
                   value={formData.birth_date}
                   onChange={(e) => updateFormData('birth_date', e.target.value)}
-                  className="bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                  className={`bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent ${
+                    formErrors.birth_date ? 'border-red-500' : ''
+                  }`}
                 />
+                {renderErrorMessage('birth_date')}
               </div>
 
               <div>
@@ -188,8 +258,11 @@ export default function OnboardingPage() {
                   placeholder="Example: Ho Chi Minh City, Vietnam"
                   value={formData.location}
                   onChange={(e) => updateFormData('location', e.target.value)}
-                  className="bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                  className={`bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent ${
+                    formErrors.location ? 'border-red-500' : ''
+                  }`}
                 />
+                {renderErrorMessage('location')}
               </div>
 
               <div>
@@ -199,11 +272,12 @@ export default function OnboardingPage() {
                 <Input
                   placeholder="Example: Head of Marketing"
                   value={formData.working_role}
-                  onChange={(e) =>
-                    updateFormData('working_role', e.target.value)
-                  }
-                  className="bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                  onChange={(e) => updateFormData('working_role', e.target.value)}
+                  className={`bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent ${
+                    formErrors.working_role ? 'border-red-500' : ''
+                  }`}
                 />
+                {renderErrorMessage('working_role')}
               </div>
 
               <div>
@@ -213,11 +287,12 @@ export default function OnboardingPage() {
                 <Input
                   placeholder="Example: Finance, Healthcare, Logistic"
                   value={formData.working_industry}
-                  onChange={(e) =>
-                    updateFormData('working_industry', e.target.value)
-                  }
-                  className="bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+                  onChange={(e) => updateFormData('working_industry', e.target.value)}
+                  className={`bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-lime-400 focus:border-transparent ${
+                    formErrors.working_industry ? 'border-red-500' : ''
+                  }`}
                 />
+                {renderErrorMessage('working_industry')}
               </div>
             </div>
           </div>
@@ -245,8 +320,11 @@ export default function OnboardingPage() {
               placeholder="Example: Build an AI agent in 30 days, Get into YC, Learn Python, etc."
               value={formData.goal_idea}
               onChange={(e) => updateFormData('goal_idea', e.target.value)}
-              className="bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 min-h-[200px] resize-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              className={`bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 min-h-[200px] resize-none focus:ring-2 focus:ring-lime-400 focus:border-transparent ${
+                formErrors.goal_idea ? 'border-red-500' : ''
+              }`}
             />
+            {renderErrorMessage('goal_idea')}
           </div>
         )
 
@@ -298,6 +376,7 @@ export default function OnboardingPage() {
                   )}
                 </button>
               ))}
+              {renderErrorMessage('goal_domain')}
             </div>
           </div>
         )
@@ -323,8 +402,11 @@ export default function OnboardingPage() {
               placeholder="Type here"
               value={formData.goal_reason}
               onChange={(e) => updateFormData('goal_reason', e.target.value)}
-              className="bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 min-h-[200px] resize-none focus:ring-2 focus:ring-lime-400 focus:border-transparent"
+              className={`bg-white border-lime-200 text-gray-900 placeholder:text-gray-400 min-h-[200px] resize-none focus:ring-2 focus:ring-lime-400 focus:border-transparent ${
+                formErrors.goal_reason ? 'border-red-500' : ''
+              }`}
             />
+            {renderErrorMessage('goal_reason')}
           </div>
         )
 
