@@ -17,6 +17,7 @@ import {
   X,
   LayoutDashboard
 } from "lucide-react"
+import { BoltBadgePresets } from "./BoltBadge"
 
 export default function SidebarNavigation({ currentPage = "knowledge" }) {
   const [isExpanded, setIsExpanded] = useState(true)
@@ -156,8 +157,8 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
               ))}
             </nav>
 
-            {/* Mobile Onboarding */}
-            <div className="p-4 border-t border-lime-200">
+            {/* Mobile Footer with Bolt Badge and Onboarding */}
+            <div className="p-4 border-t border-lime-200 space-y-3">
               <Link
                 href="/onboarding"
                 onClick={closeMobileMenu}
@@ -166,6 +167,11 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
                 <Grid3X3 size={18} className="text-lime-600" />
                 <span>Onboarding</span>
               </Link>
+              
+              {/* Inline Bolt Badge for mobile */}
+              <div className="flex justify-center">
+                <BoltBadgePresets.InlineMinimal />
+              </div>
             </div>
           </div>
         </aside>
@@ -240,8 +246,8 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
           ))}
         </nav>
 
-        {/* Onboarding Button */}
-        <div className="p-4 border-t border-lime-200 flex-shrink-0">
+        {/* Footer with Onboarding and Bolt Badge */}
+        <div className="p-4 border-t border-lime-200 flex-shrink-0 space-y-3">
           <Link
             href="/onboarding"
             className={`
@@ -254,6 +260,13 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
             <Grid3X3 size={18} className="text-lime-600 flex-shrink-0" />
             {isExpanded && <span>Onboarding</span>}
           </Link>
+          
+          {/* Inline Bolt Badge for desktop sidebar */}
+          {isExpanded && (
+            <div className="flex justify-center">
+              <BoltBadgePresets.InlineMinimal />
+            </div>
+          )}
         </div>
       </aside>
     </>

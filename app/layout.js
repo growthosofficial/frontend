@@ -1,5 +1,6 @@
 import './globals.css'
 import { Montserrat, Inter } from 'next/font/google'
+import BoltBadge from '../components/BoltBadge'
 
 export const metadata = {
   title: 'Second Brain - Knowledge Management System',
@@ -23,6 +24,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${montserrat.variable} ${inter.variable} antialiased`}>
         {children}
+        {/* Bolt Badge - appears on all pages */}
+        <BoltBadge position="bottom-right" variant="default" />
       </body>
     </html>
   )
