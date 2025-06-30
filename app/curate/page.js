@@ -7,24 +7,24 @@ import SidebarNavigation from '../../components/SidebarNavigation';
 
 export default function CurateKnowledgePage() {
   const [inputText, setInputText] = useState('');
-  const [goal, setGoal] = useState(''); // New goal state
-  const [selectedGoalData, setSelectedGoalData] = useState(null); // Store complete goal data
+  const [goal, setGoal] = useState('');
+  const [selectedGoalData, setSelectedGoalData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
   const [similarMainCategory, setSimilarMainCategory] = useState(null);
   const [similarSubCategory, setSimilarSubCategory] = useState(null);
   const [similarityScore, setSimilarityScore] = useState(null);
-  const [goalSummary, setGoalSummary] = useState(null); // New goal summary state
-  const [goalRelevanceScore, setGoalRelevanceScore] = useState(null); // New goal relevance score state
+  const [goalSummary, setGoalSummary] = useState(null);
+  const [goalRelevanceScore, setGoalRelevanceScore] = useState(null);
   const [stats, setStats] = useState({});
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [inputMode, setInputMode] = useState('text'); // Default to text mode
+  const [inputMode, setInputMode] = useState('text');
   const [similarityThreshold, setSimilarityThreshold] = useState(0.2);
   const [isApplying, setIsApplying] = useState(false);
   const [showGoalDropdown, setShowGoalDropdown] = useState(false);
-  const [userGoals, setUserGoals] = useState([]); // New state for user goals
+  const [userGoals, setUserGoals] = useState([]);
   const goalInputRef = useRef(null);
   const placeholderGoals = [
     'Learn machine learning for building recommendation systems',
@@ -187,15 +187,20 @@ export default function CurateKnowledgePage() {
             throw new Error(`Backend processing failed: ${error.message}`);
           }),
         
-        // Preview generation
+        // Preview generation - Enhanced with proper error handling
         fetch('/api/generate-preview', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
           body: JSON.stringify({ input_text: inputText }),
+          // Next.js specific: disable caching for dynamic content
+          cache: 'no-store',
         })
         .then(response => {
           if (!response.ok) {
-            throw new Error(`Preview API returned ${response.status}`);
+            throw new Error(`Preview API returned ${response.status}: ${response.statusText}`);
           }
           return response.json();
         })
@@ -295,12 +300,13 @@ export default function CurateKnowledgePage() {
         }
       }
 
-      // Call Phase 2 LLM processing
+      // Call Phase 2 LLM processing - Enhanced with Next.js standards
       console.log('🔄 Calling Phase 2 LLM processing...');
       const phase2Response = await fetch('/api/knowledge-generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
           action_type: recommendation.action_type,
@@ -311,6 +317,8 @@ export default function CurateKnowledgePage() {
           sub_category: recommendation.sub_category,
           tags: recommendation.tags || []
         }),
+        // Next.js specific: disable caching for dynamic content
+        cache: 'no-store',
       });
 
       if (!phase2Response.ok) {
@@ -404,11 +412,11 @@ export default function CurateKnowledgePage() {
       setSimilarSubCategory(null);
       setSimilarityScore(null);
       setGoalSummary(null);
-      setGoalRelevanceScore(null); // Clear goal relevance score
+      setGoalRelevanceScore(null);
       setInputText('');
-      setGoal(''); // Clear goal too
+      setGoal('');
 
-      // Auto-clear success message after 7 seconds (longer to read the detailed message)
+      // Auto-clear success message after 7 seconds
       setTimeout(() => {
         setSuccessMessage('');
       }, 7000);
@@ -435,10 +443,10 @@ export default function CurateKnowledgePage() {
     setSimilarMainCategory(null);
     setSimilarSubCategory(null);
     setSimilarityScore(null);
-    setGoalSummary(null); // Clear goal summary
-    setGoalRelevanceScore(null); // Clear goal relevance score
+    setGoalSummary(null);
+    setGoalRelevanceScore(null);
     setInputText('');
-    setGoal(''); // Clear goal
+    setGoal('');
     setError(null);
     setSuccessMessage('📝 Input discarded. Ready for new knowledge.');
 
@@ -464,7 +472,7 @@ export default function CurateKnowledgePage() {
     return { label: 'Very Low', color: 'text-gray-600 bg-gray-100' };
   };
 
-  // File upload handler
+  // File upload handler - Enhanced with Next.js standards
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -503,10 +511,18 @@ export default function CurateKnowledgePage() {
       }
       const formData = new FormData();
       formData.append('file', file);
+      
+      // Enhanced fetch with Next.js standards
       const res = await fetch('/api/parse-file', {
         method: 'POST',
         body: formData,
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+        // Next.js specific: disable caching for file uploads
+        cache: 'no-store',
       });
+      
       const data = await res.json();
       if (!res.ok) {
         setFileError(data.error || 'Failed to parse file.');
