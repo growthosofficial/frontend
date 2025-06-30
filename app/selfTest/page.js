@@ -10,7 +10,6 @@ import {
   generateMultipleChoiceQuestions,
   evaluateFreeTextAnswers,
   evaluateMultipleChoiceAnswers,
-  checkBackendStatus
 } from '../../lib/api';
 import { 
   Brain, 
@@ -43,11 +42,10 @@ export default function SelfTestPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [numQuestions, setNumQuestions] = useState(3);
   const [categories, setCategories] = useState([]);
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({});
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'connected', 'disconnected'
-  const router = useRouter();
+  const [testId, setTestId] = useState(null);
 
   // Load categories and stats on component mount
   useEffect(() => {
@@ -55,22 +53,14 @@ export default function SelfTestPage() {
   }, []);
 
   const loadInitialData = async () => {
-    // Check backend status first
-    const status = await checkBackendStatus();
-    setBackendStatus(status.status);
-    
-    if (status.status === 'connected') {
-      try {
-        await Promise.all([
-          loadCategories(),
-          loadStats()
-        ]);
-      } catch (error) {
-        console.error('Failed to load initial data:', error);
-        setError('Failed to load initial data. Please refresh the page.');
-      }
-    } else {
-      setError('Backend is not available. Please check your connection.');
+    try {
+      await Promise.all([
+        loadCategories(),
+        loadStats()
+      ]);
+    } catch (error) {
+      console.error('Failed to load initial data:', error);
+      setError('Failed to load initial data. Please refresh the page.');
     }
   };
 
@@ -95,11 +85,6 @@ export default function SelfTestPage() {
   };
 
   const generateQuestions = async () => {
-    if (backendStatus !== 'connected') {
-      setError('Backend is not available. Please check your connection.');
-      return;
-    }
-
     setIsGenerating(true);
     setError('');
     setSuccessMessage('');
@@ -127,6 +112,7 @@ export default function SelfTestPage() {
       setTestStarted(true);
       setTestCompleted(false);
       setEvaluations([]);
+      setTestId(data.test_id || null);
       
       setSuccessMessage(`Generated ${data.total_questions} ${testMode === 'free-text' ? 'free-text' : 'multiple-choice'} questions!`);
     } catch (error) {
@@ -165,13 +151,14 @@ export default function SelfTestPage() {
           question_text: q.question_text,
           answer: answers[`${q.knowledge_id}_${index}`] || ''
         }));
-        data = await evaluateFreeTextAnswers(answersData);
+        data = await evaluateFreeTextAnswers(answersData, testId);
       } else {
         const answersData = questions.map((q, index) => ({
           question_id: q.question_id,
+          knowledge_id: q.knowledge_id,
           selected_answer_index: answers[`${q.question_id}_${index}`] || 0
         }));
-        data = await evaluateMultipleChoiceAnswers(answersData);
+        data = await evaluateMultipleChoiceAnswers(answersData, testId);
       }
 
       setEvaluations(data.evaluations || []);
@@ -263,7 +250,6 @@ export default function SelfTestPage() {
           </div>
 
           {/* Stats Overview */}
-          {stats && backendStatus === 'connected' && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-white/80 backdrop-blur-lg rounded-lg p-4 border border-lime-200 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -304,7 +290,6 @@ export default function SelfTestPage() {
                 </div>
               </div>
             </div>
-          )}
 
           {/* Test Setup */}
           {!testStarted && (
@@ -379,7 +364,7 @@ export default function SelfTestPage() {
               {/* Generate Button */}
               <button
                 onClick={generateQuestions}
-                disabled={isGenerating || backendStatus !== 'connected'}
+                disabled={isGenerating}
                 className="w-full bg-lime-600 hover:bg-lime-700 disabled:bg-lime-800 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
               >
                 {isGenerating ? (
@@ -449,30 +434,6 @@ export default function SelfTestPage() {
                 <h3 className="text-lg font-medium text-gray-800 mb-4">
                   {currentQuestion.question_text}
                 </h3>
-
-                {/* Category badges for multiple choice questions */}
-                {testMode === 'multiple-choice' && (
-                  <div className="flex items-center gap-2 mb-4">
-                    {currentQuestion.main_category && (
-                      <span 
-                        className="bg-lime-600 text-white px-2 py-1 rounded text-sm font-medium cursor-pointer hover:bg-lime-700 transition-colors"
-                        title={`Main Category: ${currentQuestion.main_category}`}
-                        onClick={() => handleCategoryClick('Main Category', currentQuestion.main_category)}
-                      >
-                        {currentQuestion.main_category}
-                      </span>
-                    )}
-                    {currentQuestion.sub_category && (
-                      <span 
-                        className="bg-gray-500 text-white px-2 py-1 rounded text-sm cursor-pointer hover:bg-gray-600 transition-colors"
-                        title={`Sub Category: ${currentQuestion.sub_category}`}
-                        onClick={() => handleSubCategoryClick(currentQuestion.sub_category)}
-                      >
-                        {currentQuestion.sub_category}
-                      </span>
-                    )}
-                  </div>
-                )}
 
                 {/* Answer Input */}
                 {testMode === 'free-text' ? (
@@ -698,22 +659,42 @@ export default function SelfTestPage() {
                     {/* Mastery Update */}
                     {evaluation.mastery !== undefined && evaluation.mastery !== null && (
                       <div className="mt-4 p-3 bg-lime-50 rounded-lg border border-lime-200">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm text-gray-600">Mastery Level</p>
+                          <Lightbulb size={16} className="text-lime-500" />
+                        </div>
+                        
+                        {evaluation.previous_mastery !== undefined && evaluation.previous_mastery !== null ? (
                           <div>
-                            <p className="text-sm text-gray-600">Mastery Level</p>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm font-medium ${getMasteryLevel(evaluation.mastery).color}`}>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className={`font-medium ${getMasteryLevel(evaluation.previous_mastery).color}`}>
+                                {getMasteryLevel(evaluation.previous_mastery).level}
+                              </span>
+                              <span className="text-gray-600">
+                                ({Math.round(evaluation.previous_mastery * 100)}%)
+                              </span>
+                              <span className="text-gray-400">→</span>
+                              <span className={`font-medium ${getMasteryLevel(evaluation.mastery).color}`}>
                                 {getMasteryLevel(evaluation.mastery).level}
                               </span>
-                              <span className="text-sm text-gray-600">
-                                ({evaluation.mastery !== null && evaluation.mastery !== undefined ? `${(evaluation.mastery * 100).toFixed(1)}%` : 'N/A'})
+                              <span className="text-gray-600">
+                                ({Math.round(evaluation.mastery * 100)}%)
                               </span>
                             </div>
                           </div>
-                          <Lightbulb size={16} className="text-lime-500" />
-                        </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className={`font-medium ${getMasteryLevel(evaluation.mastery).color}`}>
+                              {getMasteryLevel(evaluation.mastery).level}
+                            </span>
+                            <span className="text-gray-600">
+                              ({Math.round(evaluation.mastery * 100)}%)
+                            </span>
+                          </div>
+                        )}
+
                         {evaluation.mastery_explanation && (
-                          <p className="text-xs text-gray-600 mt-1">{evaluation.mastery_explanation}</p>
+                          <p className="text-xs text-gray-600 mt-2">{evaluation.mastery_explanation}</p>
                         )}
                       </div>
                     )}

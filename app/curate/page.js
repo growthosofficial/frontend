@@ -16,7 +16,7 @@ export default function CurateKnowledgePage() {
   const [similarityScore, setSimilarityScore] = useState(null);
   const [goalSummary, setGoalSummary] = useState(null); // New goal summary state
   const [goalRelevanceScore, setGoalRelevanceScore] = useState(null); // New goal relevance score state
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({});
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');

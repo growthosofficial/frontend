@@ -14,7 +14,8 @@ import {
   BookOpen,
   Grid3X3,
   Menu,
-  X
+  X,
+  LayoutDashboard
 } from "lucide-react"
 
 export default function SidebarNavigation({ currentPage = "knowledge" }) {
@@ -58,11 +59,22 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
     {
       title: "Favorites",
       items: [
-        { href: "/profile", icon: <User2 size={18} />, label: "Profile" },
+        {
+          href: "/dashboard",
+          icon: <LayoutDashboard size={16} />,
+          label: "Dashboard",
+          active: currentPage === "dashboard"
+        },
+        { 
+          href: "/profile", 
+          icon: <User2 size={16} />, 
+          label: "User",
+          active: currentPage === "profile"
+        },
         {
           href: "/knowledge",
-          icon: <BookOpen size={18} />,
-          label: "Knowledge",
+          icon: <BookOpen size={16} />,
+          label: "Knowledge List",
           active: currentPage === "knowledge"
         },
       ]
@@ -72,20 +84,20 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
       items: [
         {
           href: "/curate",
-          icon: <Search size={18} />,
-          label: "Curate",
+          icon: <Search size={16} />,
+          label: "Curate Knowledge",
           active: currentPage === "curate"
         },
         {
           href: "/selfTest",
-          icon: <Pencil size={18} />,
+          icon: <Pencil size={16} />,
           label: "Self Test",
           active: currentPage === "test"
         },
         {
           href: "/agents",
-          icon: <Bot size={18} />,
-          label: "Agents",
+          icon: <Bot size={16} />,
+          label: "Deploy Agents",
           active: currentPage === "agents"
         }
       ]
@@ -95,14 +107,13 @@ export default function SidebarNavigation({ currentPage = "knowledge" }) {
       items: [
         ...[1, 2, 3].map(n => ({
           href: `/workspace/${n}`,
-          icon: <Folder size={18} />,
+          icon: <Folder size={16} />,
           label: `Workspace ${n}`
         })),
         {
           href: "/workspace/new",
-          icon: <FolderPlus size={18} />,
-          label: "New Workspace",
-          dark: true
+          icon: <FolderPlus size={16} />,
+          label: "New Workspace"
         }
       ]
     }
