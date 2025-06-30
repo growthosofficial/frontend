@@ -761,7 +761,7 @@ export default function CurateKnowledgePage() {
                 <div className="flex items-center gap-3">
                   <span className="text-lime-800 text-sm font-medium">Relevance Score:</span>
                   <span className="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold">
-                    {goalRelevanceScore || 'N/A'}/10
+                    {goalRelevanceScore === null || goalRelevanceScore === undefined ? 'N/A' : goalRelevanceScore}/10
                   </span>
                   {/* Priority badge */}
                   {goalRelevanceScore && (
