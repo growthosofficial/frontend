@@ -692,9 +692,7 @@ export default function CurateKnowledgePage() {
               <div className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</div>
               <div className="text-sm text-gray-600">Supports: .txt, .md</div>
               {fileLoading && <div className="mt-4 text-lime-600">Parsing file...</div>}
-              }
               {fileError && <div className="mt-4 text-red-600">{fileError}</div>}
-              }
             </div>
           ) : (
             <div className="bg-white rounded-lg p-6 mb-6 border border-lime-100 shadow-sm">
