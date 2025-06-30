@@ -37,40 +37,123 @@ async function generateEmbedding(text) {
 // Transform text using LLM
 async function transformTextWithLLM(instructions, inputText, similarKnowledge = null, mainCategory, subCategory, tags, actionType) {
   try {
-    const prompt = `You are a Text Transformation Specialist. Your role is to transform input text according to specific instructions provided by a knowledge organization strategist.
+    let prompt;
+    
+    if (actionType === 'update' && similarKnowledge) {
+      // Special handling for UPDATE operations - combine existing and new content
+      prompt = `You are a Text Transformation Specialist. Your role is to UPDATE existing knowledge content by combining it with new information while removing redundancy.
+
+EXISTING KNOWLEDGE CONTENT:
+${similarKnowledge}
+
+NEW INPUT TEXT:
+${inputText}
+
+TASK:
+Update the existing knowledge content by:
+1. Combining the existing content with the new input text
+2. Removing redundant or duplicate information
+3. Maintaining all unique information from both sources
+4. Organizing the combined content with clear headers
+5. Following any specific transformation instructions provided
+
+CRITICAL REQUIREMENTS:
+1. Always use **bold** formatting for headers
+2. Preserve ALL unique information from both existing and new content
+3. Remove redundant information (same facts, duplicate explanations)
+4. Maintain academic tone and technical accuracy
+5. Create clear, readable paragraphs under each headers
+6. Ensure logical flow and organization
+
+TRANSFORMATION APPROACH:
+- Identify overlapping topics between existing and new content
+- Merge related information under appropriate headers
+- Remove duplicate facts while keeping the most detailed version
+- Add new information from the input text
+- Maintain the existing structure where possible
+- Add new headers for new topics
+
+AVOID:
+- Losing any unique information from either source
+- Creating redundant content
+- Poor organization or structure
+- Analysis or interpretation beyond organization
+
+OUTPUT:
+Return ONLY the updated text as a string with proper markdown formatting for headers.
+
+INSTRUCTIONS: ${instructions || 'Update existing content by combining with new information and removing redundancy'}
+MAIN_CATEGORY: ${mainCategory}
+SUB_CATEGORY: ${subCategory}
+TAGS: ${tags.join(', ')}
+
+Updated text:`;
+    } else {
+      // Standard transformation for MERGE and CREATE_NEW operations
+      prompt = `You are a Text Transformation Specialist. Your role is to transform input text into well-structured, organized knowledge content.
+
+DEFAULT TRANSFORMATION STYLE:
+Transform the input text into a structured format with:
+- Clear, descriptive headers in **bold** format
+- Well-organized paragraphs under each header
+- Logical flow and progression of ideas
+- Academic tone with clear, concise language
+- Proper spacing and formatting
+
+EXAMPLE OUTPUT FORMAT:
+**Washington's Presidency**
+
+In the 1788-89 presidential election, Washington was elected the nation's first U.S. president.
+Along with his Treasury Secretary, Alexander Hamilton, Washington sought to create a relatively stronger central government than that favored by other founders, including Thomas Jefferson and James Madison.
+This emphasis on a stronger central government set a precedent for future governance strategies.
+
+**The Constitution**
+
+On March 4, 1789, the new nation debated, adopted, and ratified the U.S. Constitution.
+The Constitution is now recognized as the oldest and longest-standing written and codified national constitution in the world.
+In 1791, a Bill of Rights was added to guarantee inalienable rights, further solidifying the framework of governance.
 
 INPUT FORMAT:
-- instructions: string (specific transformation steps)
-- input_text: string (original text to transform)
-- similar_knowledge: string (existing knowledge context, if any)
+- instructions: string (specific transformation instructions, if provided)
+- input_text: string (new text to transform)
+- similar_knowledge: string (existing knowledge context, for reference only)
 - main_category: string (academic category)
 - sub_category: string (sub-category)
 - tags: list (semantic tags)
 - action_type: string (merge/update/create_new)
 
 TASK:
-Transform the input_text according to the provided instructions. The instructions contain specific steps for how to restructure, modify, or enhance the text.
+Transform the input_text into well-structured knowledge content. If specific instructions are provided, follow them. Otherwise, apply the default transformation style to create organized, header-based content.
 
-REQUIREMENTS:
-1. Follow the instructions EXACTLY as provided
-2. Preserve ALL original content - never delete or summarize
-3. Maintain the academic tone and accuracy
-4. If action_type is "merge" and similar_knowledge is provided, incorporate relevant elements from similar_knowledge
-5. If action_type is "update", enhance the existing content based on instructions
-6. If action_type is "create_new", restructure the content into a new format
-7. Ensure the transformed text flows naturally and maintains coherence
-8. Keep the same level of detail and technical accuracy
+NOTE: For MERGE operations, content combination is handled at the database level. For CREATE_NEW operations, transform only the new input_text.
+
+CRITICAL REQUIREMENTS:
+1. Always use **bold** formatting for headers
+2. Transform ONLY the input_text into organized content
+3. Maintain all original information - never delete or summarize content
+4. Preserve academic tone and technical accuracy
+5. Create clear, readable paragraphs under each header
+6. Focus on structure and organization of the new content
+
+DEFAULT TRANSFORMATION APPROACH:
+- Identify main topics or themes in the input text
+- Create descriptive headers for each major topic
+- Organize related information under appropriate headers
+- Ensure logical flow between sections
+- Use clear, concise language
+- Maintain proper spacing between sections
+
+AVOID:
+- Adding new information not present in input
+- Creating content without proper structure
+- Analysis or interpretation beyond organization
+- External references or citations
+- Unformatted or poorly structured output
 
 OUTPUT:
-Return ONLY the transformed text as a string. Do not include any explanations, metadata, or formatting beyond what the instructions specify.
+Return ONLY the transformed text as a string with proper markdown formatting for headers.
 
-EXAMPLE:
-Input: "Transform the input text by: restructuring paragraphs to group related concepts, adding clear section headings, modifying language to be more academic."
-Output: [The transformed text with restructured paragraphs, section headings, and academic language]
-
-Remember: You are ONLY transforming the input text according to the instructions. Do not add external information, citations, or perform any operations beyond what the instructions specify.
-
-INSTRUCTIONS: ${instructions}
+INSTRUCTIONS: ${instructions || 'Apply default transformation style with bold headers and organized structure'}
 INPUT_TEXT: ${inputText}
 SIMILAR_KNOWLEDGE: ${similarKnowledge || 'None provided'}
 MAIN_CATEGORY: ${mainCategory}
@@ -79,13 +162,16 @@ TAGS: ${tags.join(', ')}
 ACTION_TYPE: ${actionType}
 
 Transformed text:`;
+    }
 
     const response = await chatClient.chat.completions.create({
       model: process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4',
       messages: [
         {
           role: 'system',
-          content: 'You are a Text Transformation Specialist. Transform the input text according to the provided instructions exactly.'
+          content: actionType === 'update' 
+            ? 'You are a Text Transformation Specialist. For UPDATE operations, combine existing and new content while removing redundancy. For other operations, transform input text into well-structured content with bold headers.'
+            : 'You are a Text Transformation Specialist. Transform input text into well-structured knowledge content with bold headers and organized paragraphs. Always preserve all original information while improving structure and readability.'
         },
         {
           role: 'user',
@@ -93,7 +179,7 @@ Transformed text:`;
         }
       ],
       temperature: 0.3,
-      max_tokens: 4000,
+      max_tokens: 10000,
     });
 
     return response.choices[0].message.content.trim();
@@ -129,27 +215,19 @@ export async function POST(request) {
       );
     }
 
-    let processedText;
-    let embedding;
-
-    if (action_type === 'create_new') {
-      // For create_new, just use the input text as is
-      processedText = input_text;
-    } else {
-      // For update/merge, transform the text using LLM
-      processedText = await transformTextWithLLM(
-        instructions,
-        input_text,
-        similar_knowledge,
-        main_category,
-        sub_category,
-        tags || [],
-        action_type
-      );
-    }
+    // Always transform the text using LLM regardless of action type
+    const processedText = await transformTextWithLLM(
+      instructions,
+      input_text,
+      similar_knowledge,
+      main_category,
+      sub_category,
+      tags || [],
+      action_type
+    );
 
     // Generate embedding for the processed text
-    embedding = await generateEmbedding(processedText);
+    const embedding = await generateEmbedding(processedText);
 
     return Response.json({
       processed_text: processedText,

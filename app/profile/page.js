@@ -21,29 +21,17 @@ export default function ProfilePage() {
 
   const loadProfile = async () => {
     try {
-      // Get the current profile ID from localStorage or use the first profile
-      const profileId =
-        localStorage.getItem('GOS_currentProfileId') || 'new-profile-id'
-
-      // const data = {
-      //   name: 'Kevin Nguyen',
-      //   birth_date: '2002-08-23',
-      //   location: 'Ho Chi Minh City, Vietnam',
-      //   working_role: 'Head of Business Development',
-      //   working_industry: 'Web3 & Blockchain',
-      //   goal_idea:
-      //     'Build an AI agent that can automate customer support for our platform',
-      //   goal_domain: 'Skill building',
-      //   goal_reason:
-      //     'This will help me learn AI/ML while solving a real business problem and potentially save thousands in support costs',
-      //   goal_prospective_achieve_date: '2025-09-25',
-      // }
-
-      const currentProfile = await userProfileAPI.getProfile(profileId)
-      // console.log('Current profile loaded:', currentProfile)
+      // Get the first profile from the database
+      const currentProfile = await userProfileAPI.getFirstProfile()
+      
       if (currentProfile) {
         setProfile(currentProfile)
         setEditValues(currentProfile)
+        
+        // Store the profile ID in localStorage for other parts of the app
+        localStorage.setItem('GOS_currentProfileId', currentProfile.id)
+        
+        console.log('✅ Loaded first profile:', currentProfile)
         return
       }
     } catch (error) {
@@ -170,37 +158,18 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 p-4 overflow-y-auto">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-white/90 rounded-2xl p-4 mb-6 text-center">
-          <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-            <span>😊</span> User Profile
-          </h1>
-        </div>
-
-        {/* Profile Content */}
-        <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
-          {/* Avatar Section */}
-          <div className="text-center mb-8">
-            <div className="relative inline-block">
-              <Avatar className="w-32 h-32 mx-auto bg-white/20">
-                <AvatarImage src={profile.avatar_url || '/placeholder.svg'} />
-                <AvatarFallback className="bg-white/20 text-white text-2xl">
-                  {profile.name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <label className="absolute bottom-0 right-0 bg-lime-300 hover:bg-lime-300 text-slate-700 hover:text-slate-700 hover:shadow-lg p-2 rounded-full cursor-pointer">
-                <Upload className="w-4 h-4" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            <p className="text-white/80 mt-2">Change profile picture</p>
+    <div className="h-screen bg-gradient-to-r from-emerald-200 via-blue-200 to-blue-300 flex">
+      {/* Sidebar Navigation */}
+      <SidebarNavigation currentPage="profile" />
+      
+      {/* Main Content */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="bg-white/90 rounded-2xl p-4 mb-6 text-center">
+            <h1 className="text-xl font-bold flex items-center justify-center gap-2">
+              <span>😊</span> User Profile
+            </h1>
           </div>
 
           {/* Profile Content */}

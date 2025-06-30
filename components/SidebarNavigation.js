@@ -298,6 +298,7 @@ function NavItem({
       aria-current={active ? "page" : undefined}
       title={!isExpanded ? label : undefined}
     >
+
       {/* Active indicator */}
       {active && isExpanded && !customStyle && (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-lime-500 rounded-r-full" />
