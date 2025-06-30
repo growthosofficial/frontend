@@ -24,8 +24,12 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${montserrat.variable} ${inter.variable} antialiased`}>
         {children}
-        {/* Bolt Badge - appears on all pages */}
-        <BoltBadge position="bottom-right" variant="default" />
+        {/* Official Bolt.new Badge - Required for hackathon submission */}
+        <BoltBadge 
+          position="bottom-right" 
+          variant="black" 
+          size={60}
+        />
       </body>
     </html>
   )

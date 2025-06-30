@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, User, Lock, ArrowRight } from 'lucide-react';
+import BoltBadge from '../components/BoltBadge';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -185,6 +186,16 @@ export default function LoginPage() {
               <span>AI Agents</span>
             </div>
           </div>
+        </div>
+
+        {/* Additional Bolt Badge on home page for extra visibility */}
+        <div className="mt-8 flex justify-center">
+          <BoltBadge 
+            position="inline" 
+            variant="black" 
+            size={50}
+            className="opacity-80 hover:opacity-100 transition-opacity"
+          />
         </div>
       </div>
     </div>
